@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!--详解:http://t.csdn.cn/533xT-->
+	<!--时间日期 -> 日志级别 -> 线程ID -> 分隔符 -> 线程名 -> Logger名（通常对应的是类名） -> 日志内容-->
+	<!--
+    日志输出格式：%d表示日期时间，%thread表示线程名，%-5level：级别从左显示5个字符宽度，%logger{50} 表示logger名字最长50个字符，否则按照句点分割，%msg：日志消息，%n是换行符-->
+	<property name="CONSOLE_LOG_PATTERN" value="%highlight(%date{yyyy-MM-dd HH:mm:ss}) | %X{processId} |%highlight(%-5level) | %highlight(%thread) | %highlight(%logger) | %msg%n"/>
+	<property name="log.path" value="logs" />
+	<!--输出到控制台-->
+	<appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>${CONSOLE_LOG_PATTERN}</pattern>
+		</encoder>
+	</appender>
+	<!--按时间滚动产生日志文件-->
+	<appender name="info_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<!--过滤器-->
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<!--日志级别-->
+			<level>INFO</level>
+			<!--配置满足过滤条件的处理方式-->
+			<onMatch>ACCEPT</onMatch>
+			<!--配置不满足过滤条件的处理方式-->
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<!--定义文件名和路径-->
+		<file>${log.path}/main.log</file>
+		<!--滚动策略，按照时间滚动 TimeBasedRollingPolicy-->
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<!--日志的路径以及日志文件名的命名规则-->
+			<fileNamePattern>${log.path}/main.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<!--按时间回滚的同时，按文件大小来回滚 -->
+			<!--当日志文件超过maxFileSize指定的大小是，根据上面提到的%i进行日志文件滚动，注意此处配置SizeBasedTriggeringPolicy是无法实现按文件大小进行滚动的，必须配置timeBasedFileNamingAndTriggeringPolicy-->
+			<timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<!-- 单个文件的最大内存 -->
+				<MaxFileSize>100MB</MaxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>%d{yyyy-MM-dd HH:mm:ss} | %-5level | %X{processId} | %msg | %thread%n</pattern>
+		</encoder>
+	</appender>
+	<appender name="error_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>ERROR</level>
+			<onMatch>ACCEPT</onMatch>
+			<onMismatch>DENY</onMismatch>
+		</filter>
+		<file>${log.path}/error.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+			<fileNamePattern>${log.path}/error.%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+			<timeBasedFileNamingAndTriggeringPolicy
+				class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+				<MaxFileSize>100MB</MaxFileSize>
+			</timeBasedFileNamingAndTriggeringPolicy>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<pattern>%d{yyyy-MM-dd HH:mm:ss} | %-5level | %X{processId} | %msg | %thread%n</pattern>
+		</encoder>
+	</appender>
+
+	<root level="INFO">
+		<springProfile name="dev"><appender-ref ref="stdout" /></springProfile>
+		<appender-ref ref="info_appender" />
+		<appender-ref ref="error_appender" />
+	</root>
+
+</configuration>

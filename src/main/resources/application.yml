@@ -1,0 +1,26 @@
+server:
+  port: 1128
+spring:
+  profiles:
+    active:
+  datasource:
+    username: root
+    password: root
+    url: jdbc:mysql://127.0.0.1:3306/tingnichui?useUnicode=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&autoReconnect=true&useSSL=false&allowMultiQueries=true&useAffectedRows=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: hikariCP
+      minimum-idle: 100
+      maximum-pool-size: 200
+      auto-commit: true
+      idle-timeout: 10000
+      max-lifetime: 30000
+      connection-timeout: 30000
+      connection-test-query: SELECT 1
+
+
+baidu_api_key: QGoX8HAHr2VqLtLr21Uqs9b0
+baidu_secret_key: vbVosoqhczj3CEV027s4kEXhYcCTZ42O
+
+
+
