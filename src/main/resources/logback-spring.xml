@@ -64,5 +64,10 @@
 		<appender-ref ref="info_appender" />
 		<appender-ref ref="error_appender" />
 	</root>
+	<root level="INFO">
+		<springProfile name="pro"><appender-ref ref="stdout" /></springProfile>
+		<appender-ref ref="info_appender" />
+		<appender-ref ref="error_appender" />
+	</root>
 
 </configuration>
