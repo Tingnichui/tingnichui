@@ -3,7 +3,7 @@ package com.tingnichui.util;
 
 
 import com.tingnichui.common.ServiceResultEnum;
-import com.tingnichui.entity.vo.Result;
+import com.tingnichui.pojo.vo.Result;
 import org.springframework.util.StringUtils;
 
 public class ResultGenerator {

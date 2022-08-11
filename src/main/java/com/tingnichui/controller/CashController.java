@@ -1,7 +1,7 @@
 package com.tingnichui.controller;
 
 import cn.hutool.core.date.DateUtil;
-import com.tingnichui.entity.vo.Result;
+import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
 import org.springframework.web.bind.annotation.PathVariable;

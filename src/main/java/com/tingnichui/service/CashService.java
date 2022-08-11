@@ -1,6 +1,6 @@
 package com.tingnichui.service;
 
-import com.tingnichui.entity.vo.Result;
+import com.tingnichui.pojo.vo.Result;
 
 import java.math.BigDecimal;
 

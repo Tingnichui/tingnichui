@@ -1,6 +1,6 @@
 package com.tingnichui.controller;
 
-import com.tingnichui.entity.vo.Result;
+import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

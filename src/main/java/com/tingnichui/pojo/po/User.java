@@ -1,4 +1,4 @@
-package com.tingnichui.entity.po;
+package com.tingnichui.pojo.po;
 
 
 import com.baomidou.mybatisplus.annotation.IdType;

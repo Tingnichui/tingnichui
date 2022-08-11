@@ -1,4 +1,4 @@
-package com.tingnichui.entity.vo;
+package com.tingnichui.pojo.vo;
 
 import lombok.Data;
 

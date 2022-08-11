@@ -14,12 +14,6 @@ import java.util.Map;
 public class TradeServiceImpl implements TradeService {
 
 
-    @Test
-    @Override
-    public Object health() {
-        return DateUtil.now();
-    }
-
     @Override
     public Object buy() throws Exception {
         System.err.println(StockUtil.buy(Arrays.asList("601288", "3.123456", "300")));

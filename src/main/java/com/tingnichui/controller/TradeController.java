@@ -1,6 +1,8 @@
 package com.tingnichui.controller;
 
+import cn.hutool.core.date.DateUtil;
 import com.tingnichui.service.TradeService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,9 +16,9 @@ public class TradeController {
     @Resource
     private TradeService tradeService;
 
-    @PostMapping("health")
+    @GetMapping("health")
     public Object health(){
-        return tradeService.health();
+        return DateUtil.now();
     }
 
     @PostMapping("buy")
