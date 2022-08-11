@@ -1,13 +1,12 @@
 package com.tingnichui.service.impl;
 
-import cn.hutool.core.date.DateUtil;
-import com.tingnichui.interceptor.annotation.Test;
+import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.TradeService;
+import com.tingnichui.util.ResultGenerator;
 import com.tingnichui.util.StockUtil;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Map;
 
 @Service
@@ -15,37 +14,37 @@ public class TradeServiceImpl implements TradeService {
 
 
     @Override
-    public Object buy() throws Exception {
+    public Result buy() throws Exception {
         System.err.println(StockUtil.buy(Arrays.asList("601288", "3.123456", "300")));
 
-        return DateUtil.now();
+        return ResultGenerator.genSuccessResult();
     }
 
     @Override
-    public Object sell() throws Exception {
+    public Result sell() throws Exception {
         System.err.println(StockUtil.sell(Arrays.asList("601288", "3.21", "300")));
 
-        return DateUtil.now();
+        return ResultGenerator.genSuccessResult();
     }
 
     @Override
-    public Object cancel() {
+    public Result cancel() {
         System.err.println(StockUtil.cancel());
 
-        return DateUtil.now();
+        return ResultGenerator.genSuccessResult();
     }
 
     @Override
-    public Object getBalance() throws Exception {
+    public Result getBalance() throws Exception {
         Map<String, String> balance = StockUtil.getBalance();
 
-        return balance;
+        return ResultGenerator.genSuccessResult(balance);
     }
 
     @Override
-    public Object getBalanceDetail() throws Exception {
+    public Result getBalanceDetail() throws Exception {
         System.err.println(StockUtil.getBalanceDetail());
 
-        return DateUtil.now();
+        return ResultGenerator.genSuccessResult();
     }
 }

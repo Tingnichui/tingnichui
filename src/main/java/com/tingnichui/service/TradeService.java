@@ -1,14 +1,16 @@
 package com.tingnichui.service;
 
+import com.tingnichui.pojo.vo.Result;
+
 public interface TradeService {
 
-    Object buy() throws Exception;
+    Result buy() throws Exception;
 
-    Object sell() throws Exception;
+    Result sell() throws Exception;
 
-    Object cancel();
+    Result cancel();
 
-    Object getBalance() throws Exception;
+    Result getBalance() throws Exception;
 
-    Object getBalanceDetail() throws Exception;
+    Result getBalanceDetail() throws Exception;
 }

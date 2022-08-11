@@ -1,6 +1,7 @@
 package com.tingnichui.controller;
 
 import cn.hutool.core.date.DateUtil;
+import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.TradeService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,32 +18,32 @@ public class TradeController {
     private TradeService tradeService;
 
     @GetMapping("health")
-    public Object health(){
+    public String health(){
         return DateUtil.now();
     }
 
     @PostMapping("buy")
-    public Object buy() throws Exception {
+    public Result buy() throws Exception {
         return tradeService.buy();
     }
 
     @PostMapping("sell")
-    public Object sell() throws Exception {
+    public Result sell() throws Exception {
         return tradeService.sell();
     }
 
     @PostMapping("cancel")
-    public Object cancel(){
+    public Result cancel(){
         return tradeService.cancel();
     }
 
     @PostMapping("getBalance")
-    public Object getBalance() throws Exception {
+    public Result getBalance() throws Exception {
         return tradeService.getBalance();
     }
 
     @PostMapping("getBalanceDetail")
-    public Object getBalanceDetail() throws Exception {
+    public Result getBalanceDetail() throws Exception {
         return tradeService.getBalanceDetail();
     }
 }
