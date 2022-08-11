@@ -21,7 +21,7 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName(value = "stock")
+@TableName(value = "t_stock")
 public class Stock implements Comparable<Stock> {
 
     @TableId(value = "code")

@@ -2,7 +2,7 @@ server:
   port: 1128
 spring:
   profiles:
-    active: pro
+    active: dev
   datasource:
     url: jdbc:mysql://127.0.0.1:3306/tingnichui?useUnicode=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&autoReconnect=true&useSSL=false&allowMultiQueries=true&useAffectedRows=true
     driver-class-name: com.mysql.cj.jdbc.Driver

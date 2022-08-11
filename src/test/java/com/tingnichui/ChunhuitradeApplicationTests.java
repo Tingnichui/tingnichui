@@ -1,6 +1,7 @@
 package com.tingnichui;
 
 import com.tingnichui.dao.UserMapper;
+import com.tingnichui.service.StockService;
 import com.tingnichui.util.BaiduUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,9 +20,17 @@ class ChunhuitradeApplicationTests {
     @Resource
     private UserMapper userMapper;
 
+
+    @Resource
+    private StockService stockService;
+
     @Test
     void BaiduUtilTest() {
         System.err.println(baiduUtil.accurate());
     }
 
+    @Test
+    void stockServiceTest() {
+        stockService.saveDailyRecord4EastMoney();
+    }
 }

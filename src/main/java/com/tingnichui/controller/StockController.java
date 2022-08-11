@@ -25,14 +25,14 @@ public class StockController {
         return DateUtil.now();
     }
 
-    @RequestMapping("/updateStock")
-    public Result updateStockd() {
-        return stockService.updateStock();
+    @RequestMapping("/updateStock4xueqiu")
+    public Result updateStock4xueqiu() {
+        return stockService.updateStock4xueqiu();
     }
 
-    @RequestMapping("/saveDailyRecord")
-    public Result saveDailyRecord() {
-        return stockService.saveDailyRecord();
+    @RequestMapping("/saveDailyRecord4xueqiu")
+    public Result saveDailyRecord4xueqiu() {
+        return stockService.saveDailyRecord4xueqiu();
     }
 
 }

@@ -141,21 +141,28 @@ public class HttpUtil {
         return httpClient;
     }
 
-    public static String get(String url) throws Exception {
+    public static String get(String url) {
 
-        CloseableHttpClient httpClient = getHttpClient();
-        HttpGet get = new HttpGet(url);
-        CloseableHttpResponse response = httpClient.execute(get);
         String html = null;
-        HttpEntity entity = response.getEntity();
+        try {
+            CloseableHttpClient httpClient = getHttpClient();
+            HttpGet get = new HttpGet(url);
+            CloseableHttpResponse response = httpClient.execute(get);
+            html = null;
+            HttpEntity entity = response.getEntity();
 
-        if (entity != null) {
-            html = EntityUtils.toString(entity, "UTF-8");
+            if (entity != null) {
+                html = EntityUtils.toString(entity, "UTF-8");
+            }
+
+            //释放连接
+            EntityUtils.consume(entity);
+            response.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
         }
-
-        //释放连接
-        EntityUtils.consume(entity);
-        response.close();
 
         return html;
     }
@@ -215,7 +222,7 @@ public class HttpUtil {
      * @return
      * @throws Exception
      */
-    public static String get(String url, Map<String, String> headers, String hostPort) throws Exception {
+    public static String get(String url, Map<String, String> headers, String hostPort) {
 
         String[] proxys = hostPort.split(":");
         HttpHost proxy = new HttpHost(proxys[0], Integer.parseInt(proxys[1]));
@@ -226,17 +233,22 @@ public class HttpUtil {
             get.setHeader(key, headers.get(key));
         }
 
-        CloseableHttpResponse response = httpClient.execute(get);
         String respStr = null;
-        HttpEntity entity = response.getEntity();
+        try {
+            CloseableHttpResponse response = httpClient.execute(get);
+            respStr = null;
+            HttpEntity entity = response.getEntity();
 
-        if (entity != null) {
-            respStr = EntityUtils.toString(entity, "UTF-8");
+            if (entity != null) {
+                respStr = EntityUtils.toString(entity, "UTF-8");
+            }
+
+            //释放连接
+            EntityUtils.consume(response.getEntity());
+            response.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        //释放连接
-        EntityUtils.consume(response.getEntity());
-        response.close();
 
         return respStr;
     }

@@ -9,8 +9,10 @@ import com.tingnichui.pojo.vo.Result;
  */
 public interface StockService {
 
-    Result updateStock();
+    Result updateStock4xueqiu();
 
-    Result saveDailyRecord();
+    Result saveDailyRecord4xueqiu();
+
+    Result saveDailyRecord4EastMoney();
 
 }

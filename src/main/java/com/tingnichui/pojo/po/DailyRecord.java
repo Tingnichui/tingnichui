@@ -22,7 +22,7 @@ import java.util.Date;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName(value = "daily_record", autoResultMap = true)
+@TableName(value = "t_daily_record", autoResultMap = true)
 public class DailyRecord {
 
     @TableId(value = "id", type = IdType.AUTO)
