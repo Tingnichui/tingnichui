@@ -138,7 +138,7 @@ public class StockServiceImpl implements StockService {
         }
         log.warn("开始更新股票每日成交数据！");
         for (Map.Entry<String, String> entry : map.entrySet()) {
-            executorService.submit(() -> this.saveDailyRecord(entry.getKey(), entry.getValue()));
+            executorService.submit(() -> this.doSaveDailyRecord(entry.getKey(), entry.getValue()));
         }
         while (executorService.getQueue().size() != 0) {
             try {
@@ -147,12 +147,11 @@ public class StockServiceImpl implements StockService {
                 interruptedException.printStackTrace();
             }
         }
-        log.warn("更新股票每日成交数据完成！");
     }
 
     private String xueQiuDetailUrl = "http://stock.xueqiu.com/v5/stock/chart/kline.json?symbol={code}&begin={time}&period=day&type=before&count=-{recentDayNumber}&indicator=kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance";
-    @Override
-    public Result saveDailyRecord(String code, String name) {
+
+    public Result doSaveDailyRecord(String code, String name) {
         try {
             String url = xueQiuDetailUrl.replace("{code}", code)
                     .replace("{time}", String.valueOf(System.currentTimeMillis()))
@@ -161,9 +160,9 @@ public class StockServiceImpl implements StockService {
             JSONObject data = JSON.parseObject(body).getJSONObject("data");
             JSONArray list = data.getJSONArray("item");
             if (CollectionUtils.isNotEmpty(list)) {
-                JSONArray array;
                 for (Object o : list) {
-                    array = (JSONArray) o;
+                    JSONArray array = (JSONArray) o;
+                    // [(日期)1660147200000,(代码)11153736,(开盘价)12.4,(最高价)12.47,(最低价)12.24,(收盘价)12.39,()0.03,(涨幅)0.24,()1.88,()1.38009823E8,()500,()6195.0,()25.068,()3.395,()3.7807135754226975,()-67.82428147894169,()7.319522583E9,null,null,null,null,null,null,null]
                     DailyRecord dailyRecord = new DailyRecord();
                     dailyRecord.setDate(new Date(array.getLongValue(0)));
                     dailyRecord.setCode(code);
@@ -209,43 +208,28 @@ public class StockServiceImpl implements StockService {
     public static final HashMap<String, Stock> TRACK_STOCK_MAP = new HashMap<>();
 
     @Override
-    public Result run() {
-        List<Stock> stocks = stockMapper.selectList(new QueryWrapper<Stock>().notLike("name", "%ST%")
-                .notLike("name", "%st%").notLike("name", "%A%").notLike("name", "%C%").notLike("name", "%N%")
-                .notLike("name", "%U%").notLike("name", "%W%").notLike("code", "%BJ%").notLike("code", "%688%"));
-        stocks.forEach(e -> {
-            if (!e.getIgnoreMonitor() && (e.getShareholding() || e.getTrack())) {
-                TRACK_STOCK_MAP.put(e.getName(), e);
-            }
-            STOCK_MAP.put(e.getCode(), e.getName());
-        });
-        // 补充写入某只股票的历史交易数据
-        // dailyRecordProcessor.run("SZ300015", "爱尔眼科");
+    public Result saveDailyRecord() {
         if (DateUtil.hour(new Date(), true) >= 15) {
-//            executorService.submit(this::queryMainFundData);
+            List<Stock> stocks = stockMapper.selectList(new QueryWrapper<Stock>().notLike("name", "%ST%")
+                    .notLike("name", "%st%").notLike("name", "%A%").notLike("name", "%C%").notLike("name", "%N%")
+                    .notLike("name", "%U%").notLike("name", "%W%").notLike("code", "%BJ%").notLike("code", "%688%"));
+            stocks.forEach(e -> {
+                if (!e.getIgnoreMonitor() && (e.getShareholding() || e.getTrack())) {
+                    TRACK_STOCK_MAP.put(e.getName(), e);
+                }
+                STOCK_MAP.put(e.getCode(), e.getName());
+            });
             // 15点后读取当日交易数据
             this.toSaveDailyRecord(STOCK_MAP);
             // 更新每只股票收盘价，当日成交量，MA5 MA10 MA20
-            this.updateStock();
-            // 更新 外资+基金 持仓 只更新到最新季度报告的汇总表上 基金季报有滞后性，外资持仓则是实时计算，每天更新的
-//            updateForeignFundShareholding(202201);
-            // 分析连板数据
-//            analyzePlank();
-            // 分析主力流入数据
-//            analyzeMainFund();
-            // 分析上升趋势的股票
-//            analyzeUpwardTrend();
-            // 爆量回踩
-//            screeningStocks.explosiveVolumeBack(new Date());
-            // 分析红三兵股票
-//            screeningStocks.checkRedThreeSoldiersStock(new Date());
+//            this.updateStock();
         } else {
-            this.toSaveDailyRecord(STOCK_MAP);
+            return ResultGenerator.genSuccessResult("还未收盘");
             // 15点以前实时监控涨跌
 //            this.updateStock();
         }
 
-        return ResultGenerator.genSuccessResult();
+        return ResultGenerator.genSuccessResult("更新股票每日成交数据完成！");
     }
 
 }

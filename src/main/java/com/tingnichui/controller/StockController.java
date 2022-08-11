@@ -1,5 +1,6 @@
 package com.tingnichui.controller;
 
+import cn.hutool.core.date.DateUtil;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,14 +20,19 @@ public class StockController {
     @Resource
     private StockService stockService;
 
-    @RequestMapping("updateStock")
+    @RequestMapping("/health")
+    public String health() {
+        return DateUtil.now();
+    }
+
+    @RequestMapping("/updateStock")
     public Result updateStockd() {
         return stockService.updateStock();
     }
 
-    @RequestMapping("run")
-    public Result run() {
-        return stockService.run();
+    @RequestMapping("/saveDailyRecord")
+    public Result saveDailyRecord() {
+        return stockService.saveDailyRecord();
     }
 
 }

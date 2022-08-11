@@ -11,8 +11,6 @@ public interface StockService {
 
     Result updateStock();
 
-    Result saveDailyRecord(String code, String name);
-
-    Result run();
+    Result saveDailyRecord();
 
 }
