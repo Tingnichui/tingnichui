@@ -21,10 +21,7 @@ class ChunhuitradeApplicationTests {
 
     @Test
     void BaiduUtilTest() {
-//        System.err.println(baiduUtil.accurate());
-        System.err.println("test");
-        System.err.println("test");
-        System.err.println("test");
+        System.err.println(baiduUtil.accurate());
     }
 
 }

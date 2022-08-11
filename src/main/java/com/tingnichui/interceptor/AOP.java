@@ -2,6 +2,7 @@ package com.tingnichui.interceptor;
 
 import com.alibaba.fastjson.JSON;
 import com.tingnichui.util.ResultGenerator;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -18,12 +19,10 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-
+@Slf4j
 @Aspect
 @Component
 public class AOP {
-
-    private static Logger logger = LoggerFactory.getLogger(AOP.class);
 
 
     /** controller日志 **/
@@ -55,13 +54,13 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            logger.error("系统异常",throwable);
+            log.error("系统异常",throwable);
             return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             // 出参日志
             String responseLog = obj == null ? null : JSON.toJSONString(obj);
-            logger.info("controller." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("controller." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
         }
 
     }
@@ -95,13 +94,13 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            logger.error("系统异常",throwable);
+            log.error("系统异常",throwable);
             return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             // 出参日志
             String responseLog = obj == null ? null : JSON.toJSONString(obj);
-            logger.info("service." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("service." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
         }
     }
 
@@ -124,7 +123,7 @@ public class AOP {
             Object[] args = point.getArgs();
             String requestLog = JSON.toJSONString(args);//入参
             String responseLog = obj == null ? null : JSON.toJSONString(obj);//出参
-            logger.info("dao." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("dao." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
 
         }
 

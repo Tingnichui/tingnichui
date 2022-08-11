@@ -1,5 +1,6 @@
 package com.tingnichui.util;
 
+import cn.hutool.core.codec.Base64;
 import com.alibaba.fastjson.JSON;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -30,7 +31,7 @@ public class BaiduUtil {
         String url = "https://aip.baidubce.com/rest/2.0/ocr/v1/general_basic";
         try {
             // 本地文件路径
-            String imgStr = Base64Util.encode(FileUtils.readFileToByteArray(new File("C:\\Users\\abc\\Desktop\\pic\\微信截图_20220523203026.png")));
+            String imgStr = Base64.encode(new File("C:\\Users\\abc\\Desktop\\pic\\微信截图_20220523203026.png"));;
             String imgParam = URLEncoder.encode(imgStr, "UTF-8");
             String param = "image=" + imgParam;
             String result = HttpUtil.post(url + "?access_token=" + getAccessToken(), param);

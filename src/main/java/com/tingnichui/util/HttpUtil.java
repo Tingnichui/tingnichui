@@ -100,7 +100,6 @@ public class HttpUtil {
                     }
                 }
             }
-
         }
 
         return cm;

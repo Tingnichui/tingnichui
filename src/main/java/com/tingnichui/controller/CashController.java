@@ -24,7 +24,7 @@ public class CashController {
         return cashService.save(tradeAmount, actualAmount);
     }
 
-    @RequestMapping("test")
+    @RequestMapping("health")
     public Result health() {
         return ResultGenerator.genSuccessResult(DateUtil.now());
     }
