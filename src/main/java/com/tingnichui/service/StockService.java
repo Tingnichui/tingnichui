@@ -17,4 +17,8 @@ public interface StockService {
 
     Result monitorStock();
 
+    Result updateStockInfo();
+
+    Result updateCurrentYear();
+
 }

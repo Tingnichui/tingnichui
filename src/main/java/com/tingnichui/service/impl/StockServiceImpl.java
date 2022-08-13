@@ -18,6 +18,7 @@ import com.tingnichui.service.StockService;
 import com.tingnichui.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.HttpEntity;
@@ -25,7 +26,9 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -235,7 +238,7 @@ public class StockServiceImpl implements StockService {
     @Override
     public Result saveDailyRecord4xueqiu() {
 //        if (DateUtil.hour(new Date(), true) >= 15) {
-        List<StockInfo> stocks = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getStockCode,221));
+        List<StockInfo> stocks = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getStockCode, 221));
         stocks.forEach(e -> {
             TRACK_STOCK_MAP.put(e.getStockName(), e);
             STOCK_MAP.put(e.getStockExchange() + e.getStockCode(), e.getStockName());
@@ -312,6 +315,118 @@ public class StockServiceImpl implements StockService {
             DingdingUtil.sendMsg(sb.toString());
         }
         return ResultGenerator.genSuccessResult("东方财富-股价实时检测中！");
+    }
+
+    @Override
+    public Result updateStockInfo() {
+        List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(v -> v.getStockType() != 1).collect(Collectors.toList());
+        Map<String, List<StockInfo>> dbStockMap = list.stream().collect(Collectors.groupingBy(StockInfo::getStockCode));
+
+        ArrayList<StockInfo> needAddedList = new ArrayList<>();
+        ArrayList<StockInfo> needUpdatedList = new ArrayList<>();
+
+        List<StockInfo> crawlerList = this.getStockList();
+        for (StockInfo stockInfo : crawlerList) {
+            StockConsts.StockLogType stocLogType = null;
+            List<StockInfo> stockGroupList = dbStockMap.get(stockInfo.getStockCode());
+            if (stockGroupList == null) {
+                stocLogType = StockConsts.StockLogType.New;
+            } else {
+                StockInfo stockInfoInDb = stockGroupList.get(0);
+                if (!stockInfo.getStockName().equals(stockInfoInDb.getStockName())
+                        && StockUtil.isOriName(stockInfo.getStockName())) {
+                    stocLogType = StockConsts.StockLogType.Rename;
+                    stockInfo.setId(stockInfoInDb.getId());
+                }
+            }
+
+            if (stocLogType != null) {
+                if (stocLogType == StockConsts.StockLogType.New) {
+                    needAddedList.add(stockInfo);
+                } else {
+                    needUpdatedList.add(stockInfo);
+                }
+            }
+        }
+
+        for (StockInfo stockInfo : needAddedList) {
+            stockInfoMapper.insert(stockInfo);
+        }
+
+        for (StockInfo stockInfo : needUpdatedList) {
+            stockInfoMapper.updateById(stockInfo);
+        }
+
+        return ResultGenerator.genSuccessResult("更新股票信息完成！");
+    }
+
+    @Override
+    public Result updateCurrentYear() {
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+//        Map<?, ?> data = restTemplate.getForObject("http://tool.bitefu.net/jiari/?d=" + year, Map.class);
+        String content = HttpUtil.get("http://tool.bitefu.net/jiari/?d=" + year);
+        if (StringUtils.isBlank(content)) {
+            return ResultGenerator.genSuccessResult("更新每年工作日异常！");
+        }
+
+        JSONObject jsonObject = JSON.parseObject(content);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> dateInfo = (Map<String, Integer>) jsonObject.get(String.valueOf(year));
+        List<String> list = dateInfo.entrySet().stream().filter(entry -> entry.getValue() != 0).map(entry -> {
+            Date date;
+            try {
+                date = DateUtils.parseDate(year + entry.getKey(), "yyyyMMdd");
+            } catch (ParseException e) {
+                throw new IllegalArgumentException(e);
+            }
+            return DateUtil.format(date,"yyyyMMdd");
+        }).collect(Collectors.toList());
+
+        return ResultGenerator.genSuccessResult(list);
+    }
+
+    public boolean isBusinessDate(Date date) {
+
+        if (date == null) {
+            date = new Date();
+        }
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        int day = c.get(Calendar.DAY_OF_WEEK);
+        if (day == Calendar.SATURDAY || day == Calendar.SUNDAY) {
+            return false;
+        }
+        List<String> dateList = (List<String>) updateCurrentYear().getData();
+
+        return !dateList.contains(DateUtil.format(date,"yyyyMMdd"));
+    }
+
+    public boolean isBusinessTime(Date date) {
+        if (date == null) {
+            date = new Date();
+        }
+
+        boolean isBusinessDate = isBusinessDate(date);
+        if (!isBusinessDate) {
+            return false;
+        }
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        if (hour < 9 || hour == 12 || hour > 14) {
+            return false;
+        }
+
+        int minute = c.get(Calendar.MINUTE);
+        return !(hour == 9 && minute < 30 || hour == 11 && minute > 30);
+    }
+
+    private List<StockInfo> getStockList() {
+        List<EmStock> list = getStockList("f12,f13,f14");
+        return list.stream().map(EmStock::getStockInfo).collect(Collectors.toList());
     }
 
 
@@ -455,11 +570,6 @@ public class StockServiceImpl implements StockService {
         String content = HttpUtil.get("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000000&np=1&fid=f3&fields=" + fields + "&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:0+t:81+s:2048,m:1+t:2,m:1+t:23,b:MK0021,b:MK0022,b:MK0023,b:MK0024");
         if (content != null) {
             List<EmStock> list = this.parseStockInfoList(content);
-            // 保存stockInfo
-//            for (EmStock emStock : list) {
-//                stockInfoMapper.insert(emStock.getStockInfo());
-//            }
-
             list = list.stream().filter(v -> v.getStockInfo().getStockExchange() != null).collect(Collectors.toList());
             return list;
         }
@@ -497,17 +607,26 @@ public class StockServiceImpl implements StockService {
             stockInfo.setStockType(type);
 
             // DailyIndex
+            Integer closePrice = item.getInteger("f2");
+            Integer tradeVolume = item.getInteger("f5");
+            Integer tradeAmount = item.getInteger("f6");
+            Integer rurnoverRate = item.getInteger("f8");
+            Integer highestPrice = item.getInteger("f15");
+            Integer lowestPrice = item.getInteger("f16");
+            Integer openPrice = item.getInteger("f17");
+            Integer preClosePrice = item.getInteger("f18");
+
             DailyIndex dailyIndex = new DailyIndex();
             dailyIndex.setStockDate(new java.sql.Date(System.currentTimeMillis()));
             dailyIndex.setStockCode(stockInfo.getStockCode());
-            dailyIndex.setClosePrice(new BigDecimal(item.getInteger("f2").toString()).movePointLeft(2));
-            dailyIndex.setTradeVolume((long) (item.getInteger("f5") * 100));
-            dailyIndex.setTradeAmount(new BigDecimal(item.getInteger("f6").toString()));
-            dailyIndex.setRurnoverRate(new BigDecimal(item.getInteger("f8").toString()).movePointLeft(2));
-            dailyIndex.setHighestPrice(new BigDecimal(item.getInteger("f15").toString()).movePointLeft(2));
-            dailyIndex.setLowestPrice(new BigDecimal(item.getInteger("f16").toString()).movePointLeft(2));
-            dailyIndex.setOpenPrice(new BigDecimal(item.getInteger("f17").toString()).movePointLeft(2));
-            dailyIndex.setPreClosePrice(new BigDecimal(item.getInteger("f18").toString()).movePointLeft(2));
+            dailyIndex.setClosePrice(null == closePrice ? null : new BigDecimal(closePrice).movePointLeft(2));
+            dailyIndex.setTradeVolume(null == tradeVolume ? null : (long) (tradeVolume * 100));
+            dailyIndex.setTradeAmount(null == tradeAmount ? null : new BigDecimal(tradeAmount));
+            dailyIndex.setRurnoverRate(null == rurnoverRate ? null : new BigDecimal(rurnoverRate).movePointLeft(2));
+            dailyIndex.setHighestPrice(null == highestPrice ? null : new BigDecimal(highestPrice).movePointLeft(2));
+            dailyIndex.setLowestPrice(null == lowestPrice ? null : new BigDecimal(lowestPrice).movePointLeft(2));
+            dailyIndex.setOpenPrice(null == openPrice ? null : new BigDecimal(openPrice).movePointLeft(2));
+            dailyIndex.setPreClosePrice(null == preClosePrice ? null : new BigDecimal(preClosePrice).movePointLeft(2));
 
             emStock.setStockInfo(stockInfo);
             emStock.setDailyIndex(dailyIndex);

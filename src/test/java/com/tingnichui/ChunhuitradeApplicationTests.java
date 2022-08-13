@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 
@@ -44,14 +45,12 @@ class ChunhuitradeApplicationTests {
 
     @Test
     void stockServiceTest() {
-        DailyIndex dailyIndex = dailyIndexMapper.selectById(4853);
-        dailyIndex.setMa5(new BigDecimal("11.20"));
-        dailyIndex.setMa10(new BigDecimal("12.20"));
-        dailyIndex.setMa20(new BigDecimal("13.20"));
-        dailyIndex.setMa100(new BigDecimal("14.20"));
-        dailyIndex.setMa500(new BigDecimal("15.20"));
-        dailyIndexMapper.updateById(dailyIndex);
 
+//        boolean businessDate = stockServiceImpl.isBusinessDate(DateUtil.parseDate("2022-06-03"));
+        boolean businessDate = stockServiceImpl.isBusinessDate(DateUtil.parseDate("2022-06-01"));
+        System.err.println(businessDate);
+//        stockService.updateCurrentYear();
+//        stockService.updateStockInfo();
 
 //        stockService.updateStock4xueqiu();
 //        stockService.saveDailyRecord4xueqiu();
