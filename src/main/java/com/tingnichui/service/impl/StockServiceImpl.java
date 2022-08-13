@@ -10,12 +10,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tingnichui.dao.DailyIndexMapper;
-import com.tingnichui.dao.DailyRecordMapper;
 import com.tingnichui.dao.StockInfoMapper;
-import com.tingnichui.dao.StockMapper;
 import com.tingnichui.pojo.po.DailyIndex;
-import com.tingnichui.pojo.po.DailyRecord;
-import com.tingnichui.pojo.po.Stock;
 import com.tingnichui.pojo.po.StockInfo;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
@@ -51,10 +47,10 @@ import java.util.stream.Collectors;
 public class StockServiceImpl implements StockService {
 
     @Resource
-    private StockMapper stockMapper;
+    private DailyIndexMapper dailyIndexMapper;
 
     @Resource
-    private DailyRecordMapper dailyRecordMapper;
+    private StockInfoMapper stockInfoMapper;
 
     public static String getHttpGetResponseString(String url, String cookie) {
         String body = "";
@@ -94,35 +90,37 @@ public class StockServiceImpl implements StockService {
                     BigDecimal current = data.getBigDecimal("current");
                     BigDecimal volume = data.getBigDecimal("volume");
                     if (Objects.nonNull(current) && Objects.nonNull(volume)) {
-                        Stock exist = stockMapper.selectById(data.getString("symbol"));
+                        String stockCode = data.getString("symbol").substring(2);
+                        StockInfo exist = stockInfoMapper.selectOne(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getStockCode, stockCode));
                         if (Objects.nonNull(exist)) {
-                            List<DailyRecord> dailyRecords = dailyRecordMapper
+                            List<DailyIndex> dailyIndexList = dailyIndexMapper
                                     .selectPage(new Page<>(1, 20),
-                                            new QueryWrapper<DailyRecord>().eq("code", data.getString("symbol"))
-                                                    .ge("date", DateUtils.addDays(new Date(), -40)).orderByDesc("date"))
+                                            new QueryWrapper<DailyIndex>().eq("stock_code", stockCode)
+                                                    .ge("stock_date", DateUtils.addDays(new Date(), -40)).orderByDesc("stock_date"))
                                     .getRecords();
-                            exist.setVolume(volume.longValue());
-                            exist.setModifyTime(today);
-                            exist.setCurrentPrice(current);
-                            exist.setTransactionAmount(current.multiply(volume));
-                            if (dailyRecords.size() >= 20) {
-                                exist.setMa5(BigDecimal
-                                        .valueOf(dailyRecords.subList(0, 5).stream().map(DailyRecord::getClosePrice)
+//                            exist.setVolume(volume.longValue());
+//                            exist.setModifyTime(today);
+//                            exist.setCurrentPrice(current);
+//                            exist.setTransactionAmount(current.multiply(volume));
+                            DailyIndex dailyIndex = dailyIndexList.get(dailyIndexList.size());
+                            if (dailyIndexList.size() >= 20) {
+                                dailyIndex.setMa5(BigDecimal
+                                        .valueOf(dailyIndexList.subList(0, 5).stream().map(DailyIndex::getClosePrice)
                                                 .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                                exist.setMa10(BigDecimal
-                                        .valueOf(dailyRecords.subList(0, 10).stream().map(DailyRecord::getClosePrice)
+                                dailyIndex.setMa10(BigDecimal
+                                        .valueOf(dailyIndexList.subList(0, 10).stream().map(DailyIndex::getClosePrice)
                                                 .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                                exist.setMa20(BigDecimal
-                                        .valueOf(dailyRecords.subList(0, 20).stream().map(DailyRecord::getClosePrice)
+                                dailyIndex.setMa20(BigDecimal
+                                        .valueOf(dailyIndexList.subList(0, 20).stream().map(DailyIndex::getClosePrice)
                                                 .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                             }
-                            stockMapper.updateById(exist);
+//                            stockMapper.updateById(exist);
                         } else {
-                            stockMapper.insert(Stock.builder().code(data.getString("symbol"))
-                                    .name(data.getString("name")).marketValue(data.getLongValue("mc")).currentPrice(current)
-                                    .volume(volume.longValue()).ma5(zero).ma10(zero).ma20(zero)
-                                    .transactionAmount(current.multiply(volume)).modifyTime(today).track(false)
-                                    .shareholding(false).focus(false).classification("").build());
+//                            stockMapper.insert(Stock.builder().code(stockCode)
+//                                    .name(data.getString("name")).marketValue(data.getLongValue("mc")).currentPrice(current)
+//                                    .volume(volume.longValue()).ma5(zero).ma10(zero).ma20(zero)
+//                                    .transactionAmount(current.multiply(volume)).modifyTime(today).track(false)
+//                                    .shareholding(false).focus(false).classification("").build());
                         }
                     }
                 }
@@ -139,9 +137,8 @@ public class StockServiceImpl implements StockService {
             new LinkedBlockingQueue<>(5000), new NamedThreadFactory("每日交易数据线程-", false));
 
     public void toSaveDailyRecord(HashMap<String, String> map) {
-        Integer count = dailyRecordMapper.selectCount(new QueryWrapper<DailyRecord>().ge("date", checkDailyRecord()));
+        Integer count = dailyIndexMapper.selectCount(new QueryWrapper<DailyIndex>().ge("stock_date", checkDailyRecord()));
         if (count > 0) {
-            System.err.println();
             return;
         }
         log.warn("开始更新股票每日成交数据！");
@@ -161,7 +158,7 @@ public class StockServiceImpl implements StockService {
 
     public Result doSaveDailyRecord(String code, String name) {
         try {
-            String url = xueQiuDetailUrl.replace("{code}", code)
+            String url = xueQiuDetailUrl.replace("{code}", code.toUpperCase())
                     .replace("{time}", String.valueOf(System.currentTimeMillis()))
                     .replace("{recentDayNumber}", String.valueOf(1));
             String body = getHttpGetResponseString(url, xueQiuCookie);
@@ -177,30 +174,29 @@ public class StockServiceImpl implements StockService {
                     }
                     mapLIst.add(map);
                 }
-
-//{
-//    "data":
-//    {
-//        "symbol":"SH605333",
-//         "column":["timestamp","volume","open","high","low","close","chg","percent","turnoverrate","amount","volume_post","amount_post","pe","pb","ps","pcf","market_capital","balance","hold_volume_cn","hold_ratio_cn","net_volume_cn","hold_volume_hk","hold_ratio_hk","net_volume_hk"],
-//        "item":[[1660233600000,1632800,29.76,29.96,28.5,28.61,-1.15,-3.86,2.61,4.7630639E7,null,null,-10426.8295,8.6202,4.4768,-106.5401,1.249616367741E10,null,null,null,null,null,null,null]]
-//    },
-//    "error_code":0,
-//        "error_description":""
-//}
-//  {"amount":1.3627193E+8,"chg":-0.05,"ps":1.1013,"turnoverrate":3.41,"percent":-0.49,"volume":13188600,"high":10.58,"pb":1.9456,"pcf":11.6949,"low":10.13,"pe":39.3567,"market_capital":4093884892.74,"close":10.18,"open":10.18,"timestamp":1660233600000}
+                //{
+                //    "data":
+                //    {
+                //        "symbol":"SH605333",
+                //         "column":["timestamp","volume","open","high","low","close","chg","percent","turnoverrate","amount","volume_post","amount_post","pe","pb","ps","pcf","market_capital","balance","hold_volume_cn","hold_ratio_cn","net_volume_cn","hold_volume_hk","hold_ratio_hk","net_volume_hk"],
+                //        "item":[[1660233600000,1632800,29.76,29.96,28.5,28.61,-1.15,-3.86,2.61,4.7630639E7,null,null,-10426.8295,8.6202,4.4768,-106.5401,1.249616367741E10,null,null,null,null,null,null,null]]
+                //    },
+                //    "error_code":0,
+                //        "error_description":""
+                //}
+                //  {"amount":1.3627193E+8,"chg":-0.05,"ps":1.1013,"turnoverrate":3.41,"percent":-0.49,"volume":13188600,"high":10.58,"pb":1.9456,"pcf":11.6949,"low":10.13,"pe":39.3567,"market_capital":4093884892.74,"close":10.18,"open":10.18,"timestamp":1660233600000}
                 for (Map<String, Object> map : mapLIst) {
-                    DailyRecord dailyRecord = new DailyRecord();
-                    dailyRecord.setDate(new Date((Long) map.get("timestamp")));
-                    dailyRecord.setCode(code);
-                    dailyRecord.setName(name);
-                    dailyRecord.setOpenPrice((BigDecimal) map.get("open"));
-                    dailyRecord.setHighest((BigDecimal) map.get("high"));
-                    dailyRecord.setLowest((BigDecimal) map.get("low"));
-                    dailyRecord.setClosePrice((BigDecimal) map.get("close"));
-                    dailyRecord.setIncreaseRate((BigDecimal) map.get("percent"));
-                    dailyRecord.setAmount(NumberUtil.div((BigDecimal) map.get("amount"), new BigDecimal(10000), 2));
-                    dailyRecordMapper.insert(dailyRecord);
+                    DailyIndex dailyIndex = new DailyIndex();
+                    dailyIndex.setStockDate(new java.sql.Date(DateUtil.date((Long) map.get("timestamp")).getTime()));
+                    dailyIndex.setStockCode(code.substring(2));
+//                    dailyIndex.set(name);
+                    dailyIndex.setOpenPrice((BigDecimal) map.get("open"));
+                    dailyIndex.setHighestPrice((BigDecimal) map.get("high"));
+                    dailyIndex.setLowestPrice((BigDecimal) map.get("low"));
+                    dailyIndex.setClosePrice((BigDecimal) map.get("close"));
+//                    dailyIndex.setIncreaseRate((BigDecimal) map.get("percent"));
+                    dailyIndex.setTradeAmount(NumberUtil.div((BigDecimal) map.get("amount"), new BigDecimal(10000), 2));
+                    dailyIndexMapper.insert(dailyIndex);
                 }
             }
             Thread.sleep(3000);
@@ -234,19 +230,15 @@ public class StockServiceImpl implements StockService {
     /**
      * 需要监控关注的票 key-name value-Stock
      */
-    public static final HashMap<String, Stock> TRACK_STOCK_MAP = new HashMap<>();
+    public static final HashMap<String, StockInfo> TRACK_STOCK_MAP = new HashMap<>();
 
     @Override
     public Result saveDailyRecord4xueqiu() {
 //        if (DateUtil.hour(new Date(), true) >= 15) {
-        List<Stock> stocks = stockMapper.selectList(new QueryWrapper<Stock>().notLike("name", "%ST%")
-                .notLike("name", "%st%").notLike("name", "%A%").notLike("name", "%C%").notLike("name", "%N%")
-                .notLike("name", "%U%").notLike("name", "%W%").notLike("code", "%BJ%").notLike("code", "%688%"));
+        List<StockInfo> stocks = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getStockCode,221));
         stocks.forEach(e -> {
-            if (!e.getIgnoreMonitor() && (e.getShareholding() || e.getTrack())) {
-                TRACK_STOCK_MAP.put(e.getName(), e);
-            }
-            STOCK_MAP.put(e.getCode(), e.getName());
+            TRACK_STOCK_MAP.put(e.getStockName(), e);
+            STOCK_MAP.put(e.getStockExchange() + e.getStockCode(), e.getStockName());
         });
         // 15点后读取当日交易数据
         this.toSaveDailyRecord(STOCK_MAP);
@@ -260,12 +252,6 @@ public class StockServiceImpl implements StockService {
 
         return ResultGenerator.genSuccessResult("雪球-更新股票每日成交数据完成！");
     }
-
-    @Resource
-    private DailyIndexMapper dailyIndexMapper;
-
-    @Resource
-    private StockInfoMapper stockInfoMapper;
 
     @Override
     public Result saveDailyRecord4EastMoney() {

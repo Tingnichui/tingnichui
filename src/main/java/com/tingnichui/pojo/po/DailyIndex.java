@@ -75,6 +75,31 @@ public class DailyIndex {
     private BigDecimal rurnoverRate;
 
     /**
+     * 5日均线值
+     */
+    private BigDecimal ma5;
+
+    /**
+     * 10日均线值
+     */
+    private BigDecimal ma10;
+
+    /**
+     * 20日均线值
+     */
+    private BigDecimal ma20;
+
+    /**
+     * 100日均线值
+     */
+    private BigDecimal ma100;
+
+    /**
+     * 500日均线值
+     */
+    private BigDecimal ma500;
+
+    /**
      * create_time
      */
     private java.util.Date createTime;
