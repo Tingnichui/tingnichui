@@ -25,64 +25,64 @@ public class DailyIndex {
     private Integer id;
 
     /**
-     * code
+     * 股票代码
      */
-    private String code;
+    private String stockCode;
 
     /**
-     * date
+     * 股票日期
      */
-    private Date date;
+    private Date stockDate;
 
     /**
-     * pre_closing_price
+     * 昨日收盘价
      */
-    private BigDecimal preClosingPrice;
+    private BigDecimal preClosePrice;
 
     /**
-     * opening_price
+     * 今日开盘价
      */
-    private BigDecimal openingPrice;
+    private BigDecimal openPrice;
 
     /**
-     * highest_price
+     * 最高价
      */
     private BigDecimal highestPrice;
 
     /**
-     * lowest_price
+     * 最低价
      */
     private BigDecimal lowestPrice;
 
     /**
-     * closing_price
+     * 收盘价
      */
-    private BigDecimal closingPrice;
+    private BigDecimal closePrice;
 
     /**
-     * trading_volume
+     * 交易量
      */
-    private Long tradingVolume;
+    private Long tradeVolume;
 
     /**
-     * trading_value
+     * 交易总金额
      */
-    private BigDecimal tradingValue;
+    private BigDecimal tradeAmount;
 
     /**
-     * rurnover_rate
+     * 换手率
      */
     private BigDecimal rurnoverRate;
 
     /**
      * create_time
      */
-    private Timestamp createTime;
+    private java.util.Date createTime;
 
     /**
      * update_time
      */
-    private Timestamp updateTime;
+    private java.util.Date updateTime;
 
 
 

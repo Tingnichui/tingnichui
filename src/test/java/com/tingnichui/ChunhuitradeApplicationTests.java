@@ -36,9 +36,11 @@ class ChunhuitradeApplicationTests {
 
     @Test
     void stockServiceTest() {
+
+
 //        stockServiceImpl.doSaveDailyRecord("SZ300100","双林股份");
-        stockService.saveDailyRecord4EastMoney();
-//        stockService.monitorStock();
+//        stockService.saveDailyRecord4EastMoney();
+        stockService.monitorStock();
     }
 
     @Test

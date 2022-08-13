@@ -22,7 +22,6 @@ import com.tingnichui.service.StockService;
 import com.tingnichui.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.HttpEntity;
@@ -31,7 +30,6 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.springframework.stereotype.Service;
-import sun.plugin.javascript.navig.LinkArray;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
@@ -271,19 +269,19 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public Result saveDailyRecord4EastMoney() {
-        // 获取退市的股票和指数
-        List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getType() == 0 || stockInfo.getType() == 1) && stockInfo.getState() != 2).collect(Collectors.toList());
+        // 获取未退市的股票和指数
+        List<StockInfo> stockInfoList = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getStockType() == 0 || stockInfo.getStockType() == 1) && 2 != stockInfo.getStockState()).collect(Collectors.toList());
 
         // 获取当天的日线
-        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getDate, new java.sql.Date(System.currentTimeMillis())));
+        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
         // 获取代码股票代码集合
-        List<String> codeList = dailyIndexList.stream().map(DailyIndex::getCode).collect(Collectors.toList());
-        // 剔除退市股票
-        list = list.stream().filter(v -> !codeList.contains(this.getFullCode(v))).collect(Collectors.toList());
+        List<String> codeList = dailyIndexList.stream().map(DailyIndex::getStockCode).collect(Collectors.toList());
+        // 剔除已经爬取到的股票
+        stockInfoList = stockInfoList.stream().filter(v -> !codeList.contains(v.getStockCode())).collect(Collectors.toList());
 
 
-        crawDailyIndexFromSina(list.stream().filter(s -> s.getType() == 1).collect(Collectors.toList()));
-        crawDailyIndexFromEastMoney(list);
+        crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
+        crawDailyIndexFromEastMoney(stockInfoList);
         return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
     }
 
@@ -292,34 +290,34 @@ public class StockServiceImpl implements StockService {
     @Override
     public Result monitorStock() {
         // 新浪
-        List<StockInfo> selectList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getId, 1018));
-        List<String> codeList = selectList.stream().map(v -> StockUtil.getFullCode(v.getCode())).collect(Collectors.toList());
+        List<StockInfo> selectList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getId, 221));
+        List<String> codeList = selectList.stream().map(v -> StockUtil.getFullCode(v.getStockCode())).collect(Collectors.toList());
         List<DailyIndex> dailyIndexList = this.getDailyIndex(codeList);
 
 
         StringBuilder sb = new StringBuilder();
         for (StockInfo stockInfo : selectList) {
-            String code = stockInfo.getCode();
-            DailyIndex dailyIndex = dailyIndexList.stream().filter(d -> d.getCode().contains(stockInfo.getCode())).findAny().orElse(null);
+            String code = stockInfo.getStockCode();
+            DailyIndex dailyIndex = dailyIndexList.stream().filter(d -> d.getStockCode().contains(stockInfo.getStockCode())).findAny().orElse(null);
             if (dailyIndex == null) {
                 continue;
             }
             if (lastPriceMap.containsKey(code)) {
                 BigDecimal lastPrice = lastPriceMap.get(code);
-                double rate = Math.abs(StockUtil.calcIncreaseRate(dailyIndex.getClosingPrice(), lastPrice).doubleValue());
+                double rate = Math.abs(StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(), lastPrice).doubleValue());
 //                if (Double.compare(rate, stockInfo.getRate().doubleValue()) >= 0) {
-                lastPriceMap.put(code, dailyIndex.getClosingPrice());
+                lastPriceMap.put(code, dailyIndex.getClosePrice());
                 String name = "";
                 String body = String.format("%s:当前价格:%.02f, 涨幅%.02f%%", name,
-                        dailyIndex.getClosingPrice().doubleValue(),
-                        StockUtil.calcIncreaseRate(dailyIndex.getClosingPrice(),
-                                dailyIndex.getPreClosingPrice()).movePointRight(2).doubleValue());
+                        dailyIndex.getClosePrice().doubleValue(),
+                        StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(),
+                                dailyIndex.getPreClosePrice()).movePointRight(2).doubleValue());
                 sb.append(body + "\n");
 //                }
             } else {
-                lastPriceMap.put(code, dailyIndex.getPreClosingPrice());
+                lastPriceMap.put(code, dailyIndex.getPreClosePrice());
                 String name = "";
-                String body = String.format("%s:当前价格:%.02f", name, dailyIndex.getClosingPrice().doubleValue());
+                String body = String.format("%s:当前价格:%.02f", name, dailyIndex.getClosePrice().doubleValue());
                 sb.append(body + "\n");
             }
         }
@@ -335,7 +333,7 @@ public class StockServiceImpl implements StockService {
         final int tCount = 500;
         ArrayList<String> stockCodeList = new ArrayList<>(tCount);
         for (StockInfo stockInfo : list) {
-            stockCodeList.add(this.getFullCode(stockInfo));
+            stockCodeList.add(stockInfo.getStockExchange() + stockInfo.getStockCode());
             if (stockCodeList.size() == tCount) {
                 saveDailyIndex(stockCodeList);
                 stockCodeList.clear();
@@ -345,10 +343,6 @@ public class StockServiceImpl implements StockService {
         if (!stockCodeList.isEmpty()) {
             saveDailyIndex(stockCodeList);
         }
-    }
-
-    private String getFullCode(StockInfo stockInfo) {
-        return stockInfo.getExchange() + stockInfo.getCode();
     }
 
     private void saveDailyIndex(ArrayList<String> stockCodeList) {
@@ -362,37 +356,66 @@ public class StockServiceImpl implements StockService {
         header.put("Referer", "https://finance.sina.com.cn/");
         String content = HttpUtil.get("https://hq.sinajs.cn/list=" + codes, header, "gbk");
         if (content != null) {
-            return this.parseDailyIndexList(content);
+            return this.parseDailyIndexList4xinlang(content);
         }
         return Collections.emptyList();
     }
 
-    public List<DailyIndex> parseDailyIndexList(String content) {
-        String[] str = content.split("\n");
-        ArrayList<DailyIndex> list = new ArrayList<>();
-        for (String c : str) {
-            c = c.trim();
-            if (c.length() > 0) {
-                DailyIndex dailyIndex = parseDailyIndex(c);
-                if (dailyIndex != null) {
-                    list.add(dailyIndex);
-                }
-            }
-        }
-        return list;
-    }
 
-    /*
+    /**
      * 0：新晨科技, 股票名字; 1：27.55″, 今日开盘价; 2：27.25″, 昨日收盘价; 3：26.91″, 当前价格; 4：27.55″,
      * 今日最高价; 5：26.20″, 今日最低价; 6：26.91″, 竞买价, 即“买一报价; 7：26.92″, 竞卖价, 即“卖一报价;
      * 8：22114263″ 成交金额
+     *
+     * @param content var hq_str_sh601288="农业银行,2.840,2.850,2.830,2.850,2.810,2.830,2.840,270504182,765825256.000,20503200,2.830,28078500,2.820,32757300,2.810,20226900,2.800,4955800,2.790,9961400,2.840,21828600,2.850,26505900,2.860,18669000,2.870,28754100,2.880,2022-08-12,15:00:00,00,";
+     * @return
      */
+    //
+    private List<DailyIndex> parseDailyIndexList4xinlang(String content) {
+        String[] dailyIndexListStr = content.split("\n");
+        ArrayList<DailyIndex> DailyList = new ArrayList<>();
+        for (String dailyIndexStr : dailyIndexListStr) {
+            dailyIndexStr = dailyIndexStr.trim();
+            if (dailyIndexStr.length() > 0) {
+                String[] strs = dailyIndexStr.split(",");
+                if (strs.length <= 1) {
+                    continue;
+                }
+                String code = strs[0].substring(strs[0].lastIndexOf('_') + 3, strs[0].lastIndexOf('='));
+                BigDecimal openingPrice = new BigDecimal(strs[1]);
+                BigDecimal preClosingPrice = new BigDecimal(strs[2]);
+                BigDecimal closingPrice = new BigDecimal(strs[3]);
+                BigDecimal highestPrice = new BigDecimal(strs[4]);
+                BigDecimal lowestPrice = new BigDecimal(strs[5]);
+                long tradingVolume = Long.parseLong(strs[8]);
+                BigDecimal tradingValue = new BigDecimal(strs[9]);
+                Date date = DateUtil.parseDate(strs[30]);
+
+                DailyIndex dailyIndex = new DailyIndex();
+                dailyIndex.setStockCode(code);
+                dailyIndex.setOpenPrice(openingPrice);
+                dailyIndex.setPreClosePrice(preClosingPrice);
+                dailyIndex.setClosePrice(closingPrice);
+                dailyIndex.setHighestPrice(highestPrice);
+                dailyIndex.setLowestPrice(lowestPrice);
+                dailyIndex.setTradeVolume(tradingVolume);
+                dailyIndex.setTradeAmount(tradingValue);
+                dailyIndex.setRurnoverRate(BigDecimal.ZERO);
+                dailyIndex.setStockDate(new java.sql.Date(date.getTime()));
+
+                DailyList.add(dailyIndex);
+            }
+        }
+        return DailyList;
+    }
+
+
     private DailyIndex parseDailyIndex(String content) {
         String[] strs = content.split(",");
         if (strs.length <= 1) {
             return null;
         }
-        String code = strs[0].substring(strs[0].lastIndexOf('_') + 1, strs[0].lastIndexOf('='));
+        String code = strs[0].substring(strs[0].lastIndexOf('_') + 3, strs[0].lastIndexOf('='));
         BigDecimal openingPrice = new BigDecimal(strs[1]);
         BigDecimal preClosingPrice = new BigDecimal(strs[2]);
         BigDecimal closingPrice = new BigDecimal(strs[3]);
@@ -407,24 +430,24 @@ public class StockServiceImpl implements StockService {
             throw new IllegalArgumentException(e);
         }
         DailyIndex dailyIndex = new DailyIndex();
-        dailyIndex.setCode(code);
-        dailyIndex.setOpeningPrice(openingPrice);
-        dailyIndex.setPreClosingPrice(preClosingPrice);
-        dailyIndex.setClosingPrice(closingPrice);
+        dailyIndex.setStockCode(code);
+        dailyIndex.setOpenPrice(openingPrice);
+        dailyIndex.setPreClosePrice(preClosingPrice);
+        dailyIndex.setClosePrice(closingPrice);
         dailyIndex.setHighestPrice(highestPrice);
         dailyIndex.setLowestPrice(lowestPrice);
-        dailyIndex.setTradingVolume(tradingVolume);
-        dailyIndex.setTradingValue(tradingValue);
+        dailyIndex.setTradeVolume(tradingVolume);
+        dailyIndex.setTradeAmount(tradingValue);
         dailyIndex.setRurnoverRate(BigDecimal.ZERO);
-        dailyIndex.setDate(new java.sql.Date(date.getTime()));
+        dailyIndex.setStockDate(new java.sql.Date(date.getTime()));
 
         return dailyIndex;
     }
 
 
-    private void crawDailyIndexFromEastMoney(List<StockInfo> list) {
+    private void crawDailyIndexFromEastMoney(List<StockInfo> stockInfoList) {
         List<DailyIndex> dailyIndexList = this.getDailyIndexFromEastMoney();
-        dailyIndexList = dailyIndexList.stream().filter(d -> list.stream().anyMatch(s -> d.getCode().equals(this.getFullCode(s)))).collect(Collectors.toList());
+        dailyIndexList = dailyIndexList.stream().filter(dailyIndex -> stockInfoList.stream().anyMatch(stockInfo -> dailyIndex.getStockCode().equals(stockInfo.getStockCode()))).collect(Collectors.toList());
         List<DailyIndex> dailyIndices = filterInvalid(dailyIndexList);
 
         this.saveDailyIndex(dailyIndices);
@@ -438,7 +461,7 @@ public class StockServiceImpl implements StockService {
     }
 
     public List<DailyIndex> getDailyIndexFromEastMoney() {
-        List<EmStock> list = this.getStockList("f2,f5,f6,f8,f12,f13,f15,f16,f17,f18");
+        List<EmStock> list = this.getStockList("f2,f5,f6,f8,f12,f13,f14,f15,f16,f17,f18");
         return list.stream().map(EmStock::getDailyIndex).collect(Collectors.toList());
     }
 
@@ -446,7 +469,12 @@ public class StockServiceImpl implements StockService {
         String content = HttpUtil.get("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000000&np=1&fid=f3&fields=" + fields + "&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:0+t:81+s:2048,m:1+t:2,m:1+t:23,b:MK0021,b:MK0022,b:MK0023,b:MK0024");
         if (content != null) {
             List<EmStock> list = this.parseStockInfoList(content);
-            list = list.stream().filter(v -> v.getStockInfo().getExchange() != null).collect(Collectors.toList());
+            // 保存stockInfo
+//            for (EmStock emStock : list) {
+//                stockInfoMapper.insert(emStock.getStockInfo());
+//            }
+
+            list = list.stream().filter(v -> v.getStockInfo().getStockExchange() != null).collect(Collectors.toList());
             return list;
         }
         return Collections.emptyList();
@@ -455,104 +483,53 @@ public class StockServiceImpl implements StockService {
     private List<DailyIndex> filterInvalid(List<DailyIndex> dailyIndexList) {
         final String currentDateStr = DateFormatUtils.format(new Date(), "yyyy-MM-dd");
         return dailyIndexList.stream().filter(dailyIndex ->
-                DecimalUtil.bg(dailyIndex.getOpeningPrice(), BigDecimal.ZERO)
-                        && dailyIndex.getTradingVolume() > 0
-                        && DecimalUtil.bg(dailyIndex.getTradingValue(), BigDecimal.ZERO)
-                        && currentDateStr.equals(DateFormatUtils.format(dailyIndex.getDate(), "yyyy-MM-dd"))
+                DecimalUtil.bg(dailyIndex.getOpenPrice(), BigDecimal.ZERO)
+                        && dailyIndex.getTradeVolume() > 0
+                        && DecimalUtil.bg(dailyIndex.getTradeAmount(), BigDecimal.ZERO)
+                        && currentDateStr.equals(DateFormatUtils.format(dailyIndex.getStockDate(), "yyyy-MM-dd"))
         ).collect(Collectors.toList());
     }
 
     public List<EmStock> parseStockInfoList(String content) {
-//        char[] chArr = content.toCharArray();
-//        char[] newCharArr = new char[chArr.length];
-//        int i = 0;
-//        for (char ch : chArr) {
-//            if (ch == ' ') {
-//                continue;
-//            }
-//            if (ch == 'Ａ') {
-//                ch = 'A';
-//            } else if (ch == 'Ｂ') {
-//                ch = 'B';
-//            }
-//            newCharArr[i++] = ch;
-//        }
-
         JSONObject result = JSON.parseObject(content);
         JSONObject data = (JSONObject) result.get("data");
         Integer total = (Integer) data.get("total");
         JSONArray diff = (JSONArray) data.get("diff");
-        return diff.stream().map(v ->{
+        return diff.stream().map(v -> {
             JSONObject item = (JSONObject) v;
             String code = item.getString("f12");
             EmStock emStock = new EmStock();
 
+
+            // StockInfo
             StockInfo stockInfo = new StockInfo();
             String exchange = item.getInteger("f13") == 0 ? StockUtil.getExchange(code) : StockConsts.Exchange.SH.getName();
             int type = StockUtil.getStockType(exchange, code);
-            stockInfo.setExchange(exchange);
-            stockInfo.setName( item.getString("f14"));
-            stockInfo.setCode(code);
-            stockInfo.setExchange(exchange);
-            stockInfo.setType(type);
+            stockInfo.setStockExchange(exchange);
+            stockInfo.setStockName(item.getString("f14"));
+            stockInfo.setStockCode(code);
+            stockInfo.setStockType(type);
 
+            // DailyIndex
             DailyIndex dailyIndex = new DailyIndex();
-            dailyIndex.setDate(new java.sql.Date(System.currentTimeMillis()));
-            dailyIndex.setCode(stockInfo.getExchange() + stockInfo.getCode());
-            dailyIndex.setClosingPrice(new BigDecimal(item.getInteger("f2").toString()).movePointLeft(2));
-            dailyIndex.setTradingVolume((long) (item.getInteger("f5") * 100));
-            dailyIndex.setTradingValue(new BigDecimal(item.getInteger("f6").toString()));
+            dailyIndex.setStockDate(new java.sql.Date(System.currentTimeMillis()));
+            dailyIndex.setStockCode(stockInfo.getStockCode());
+            dailyIndex.setClosePrice(new BigDecimal(item.getInteger("f2").toString()).movePointLeft(2));
+            dailyIndex.setTradeVolume((long) (item.getInteger("f5") * 100));
+            dailyIndex.setTradeAmount(new BigDecimal(item.getInteger("f6").toString()));
             dailyIndex.setRurnoverRate(new BigDecimal(item.getInteger("f8").toString()).movePointLeft(2));
             dailyIndex.setHighestPrice(new BigDecimal(item.getInteger("f15").toString()).movePointLeft(2));
             dailyIndex.setLowestPrice(new BigDecimal(item.getInteger("f16").toString()).movePointLeft(2));
-            dailyIndex.setOpeningPrice(new BigDecimal(item.getInteger("f17").toString()).movePointLeft(2));
-            dailyIndex.setPreClosingPrice(new BigDecimal(item.getInteger("f18").toString()).movePointLeft(2));
+            dailyIndex.setOpenPrice(new BigDecimal(item.getInteger("f17").toString()).movePointLeft(2));
+            dailyIndex.setPreClosePrice(new BigDecimal(item.getInteger("f18").toString()).movePointLeft(2));
 
             emStock.setStockInfo(stockInfo);
             emStock.setDailyIndex(dailyIndex);
 
             return emStock;
         }).collect(Collectors.toList());
-
-
-//        StockResultVo stockResultVo = JSON.parseObject(content, StockResultVo.class);
-//        StockResultVo stockResultVo = JSON.parseObject(new String(newCharArr, 0, i), StockResultVo.class);
-        // {"f2":1540,"f5":142011,"f6":227235371.81,"f8":1200,"f12":"835985","f13":0,"f15":1716,"f16":1530,"f17":1716,"f18":1740}
-        // {"f1":0,"f10":0,"f11":0,"f12":"835985","f13":0,"f15":1716,"f16":1530,"f17":1716,"f18":1740,"f2":1540,"f20":0,"f21":0,"f22":0,"f23":0,"f24":0,"f25":0,"f3":0,"f4":0,"f5":142011,"f6":2.2723537181E8,"f62":0.0,"f7":0,"f8":1200,"f9":0}
-        // {"f12":"000718","f13":0,"f14":"苏宁环球"}
-        // f1 : ; f1 : ; f2 : 收盘价; f3 : ; f4 : ; f5 : 总手; f6 : 交易金额; f7 : ; f8 : 换手率; f9 : ; f10 : ; f11 : ; f12 : 代码835985; f13 : 前缀bj; f14 : 股票名称; f15 : 最高价; f16 : 最低价; f17 : 开盘价; f18 : 昨日收盘价; f20 : ; f21 : ; f22 : ; f23 : ; f24 : ; f25 : ; f62
-//        return stockResultVo.getData().getDiff().stream().map(v -> {
-//            String code = v.getF12();
-//            EmStock emStock = new EmStock();
-//
-//            StockInfo stockInfo = new StockInfo();
-//            String exchange = v.getF13() == 0 ? StockUtil.getExchange(code) : StockConsts.Exchange.SH.getName();
-//            int type = StockUtil.getStockType(exchange, code);
-//            stockInfo.setExchange(exchange);
-//            stockInfo.setName(v.getF14());
-//            stockInfo.setCode(code);
-//            stockInfo.setExchange(exchange);
-//            stockInfo.setType(type);
-//
-//            DailyIndex dailyIndex = new DailyIndex();
-//            dailyIndex.setDate(new java.sql.Date(System.currentTimeMillis()));
-//            dailyIndex.setCode(stockInfo.getExchange() + stockInfo.getCode());
-//            dailyIndex.setClosingPrice(new BigDecimal(v.getF2()).movePointLeft(2));
-//            dailyIndex.setTradingVolume(v.getF5() * 100);
-//            dailyIndex.setTradingValue(new BigDecimal(v.getF6()));
-//            dailyIndex.setRurnoverRate(new BigDecimal(v.getF8()).movePointLeft(2));
-//            dailyIndex.setHighestPrice(new BigDecimal(v.getF15()).movePointLeft(2));
-//            dailyIndex.setLowestPrice(new BigDecimal(v.getF16()).movePointLeft(2));
-//            dailyIndex.setOpeningPrice(new BigDecimal(v.getF17()).movePointLeft(2));
-//            dailyIndex.setPreClosingPrice(new BigDecimal(v.getF18()).movePointLeft(2));
-//
-//            emStock.setStockInfo(stockInfo);
-//            emStock.setDailyIndex(dailyIndex);
-//
-//            return emStock;
-//        }).collect(Collectors.toList());
     }
-//
+
     public static class EmStock {
 
         private StockInfo stockInfo;
@@ -572,263 +549,6 @@ public class StockServiceImpl implements StockService {
 
         public void setDailyIndex(DailyIndex dailyIndex) {
             this.dailyIndex = dailyIndex;
-        }
-
-    }
-
-    public static class StockResultVo {
-
-        private StockResultDataVo data;
-
-        public StockResultDataVo getData() {
-            return data;
-        }
-
-        public void setData(StockResultDataVo data) {
-            this.data = data;
-        }
-    }
-
-    public static class StockResultDataVo {
-
-        private List<StockResultDiffVo> diff;
-
-        public List<StockResultDiffVo> getDiff() {
-            return diff;
-        }
-
-        public void setDiff(List<StockResultDiffVo> diff) {
-            this.diff = diff;
-        }
-
-    }
-
-    public static class StockResultDiffVo {
-
-        private int f1;
-        private int f2;
-        private int f3;
-        private int f4;
-        private long f5;
-        private double f6;
-        private int f7;
-        private int f8;
-        private int f9;
-        private int f10;
-        private int f11;
-        private String f12;
-        private int f13;
-        private String f14;
-        private int f15;
-        private int f16;
-        private int f17;
-        private int f18;
-        private int f20;
-        private int f21;
-        private int f22;
-        private int f23;
-        private int f24;
-        private int f25;
-        private double f62;
-
-        public int getF1() {
-            return f1;
-        }
-
-        public void setF1(int f1) {
-            this.f1 = f1;
-        }
-
-        public int getF2() {
-            return f2;
-        }
-
-        public void setF2(int f2) {
-            this.f2 = f2;
-        }
-
-        public int getF3() {
-            return f3;
-        }
-
-        public void setF3(int f3) {
-            this.f3 = f3;
-        }
-
-        public int getF4() {
-            return f4;
-        }
-
-        public void setF4(int f4) {
-            this.f4 = f4;
-        }
-
-        public long getF5() {
-            return f5;
-        }
-
-        public void setF5(long f5) {
-            this.f5 = f5;
-        }
-
-        public double getF6() {
-            return f6;
-        }
-
-        public void setF6(double f6) {
-            this.f6 = f6;
-        }
-
-        public int getF7() {
-            return f7;
-        }
-
-        public void setF7(int f7) {
-            this.f7 = f7;
-        }
-
-        public int getF8() {
-            return f8;
-        }
-
-        public void setF8(int f8) {
-            this.f8 = f8;
-        }
-
-        public int getF9() {
-            return f9;
-        }
-
-        public void setF9(int f9) {
-            this.f9 = f9;
-        }
-
-        public int getF10() {
-            return f10;
-        }
-
-        public void setF10(int f10) {
-            this.f10 = f10;
-        }
-
-        public int getF11() {
-            return f11;
-        }
-
-        public void setF11(int f11) {
-            this.f11 = f11;
-        }
-
-        public String getF12() {
-            return f12;
-        }
-
-        public void setF12(String f12) {
-            this.f12 = f12;
-        }
-
-        public int getF13() {
-            return f13;
-        }
-
-        public void setF13(int f13) {
-            this.f13 = f13;
-        }
-
-        public String getF14() {
-            return f14;
-        }
-
-        public void setF14(String f14) {
-            this.f14 = f14;
-        }
-
-        public int getF15() {
-            return f15;
-        }
-
-        public void setF15(int f15) {
-            this.f15 = f15;
-        }
-
-        public int getF16() {
-            return f16;
-        }
-
-        public void setF16(int f16) {
-            this.f16 = f16;
-        }
-
-        public int getF17() {
-            return f17;
-        }
-
-        public void setF17(int f17) {
-            this.f17 = f17;
-        }
-
-        public int getF18() {
-            return f18;
-        }
-
-        public void setF18(int f18) {
-            this.f18 = f18;
-        }
-
-        public int getF20() {
-            return f20;
-        }
-
-        public void setF20(int f20) {
-            this.f20 = f20;
-        }
-
-        public int getF21() {
-            return f21;
-        }
-
-        public void setF21(int f21) {
-            this.f21 = f21;
-        }
-
-        public int getF22() {
-            return f22;
-        }
-
-        public void setF22(int f22) {
-            this.f22 = f22;
-        }
-
-        public int getF23() {
-            return f23;
-        }
-
-        public void setF23(int f23) {
-            this.f23 = f23;
-        }
-
-        public int getF24() {
-            return f24;
-        }
-
-        public void setF24(int f24) {
-            this.f24 = f24;
-        }
-
-        public int getF25() {
-            return f25;
-        }
-
-        public void setF25(int f25) {
-            this.f25 = f25;
-        }
-
-        public double getF62() {
-            return f62;
-        }
-
-        public void setF62(double f62) {
-            this.f62 = f62;
         }
 
     }

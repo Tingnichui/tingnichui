@@ -8,8 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-import java.sql.Timestamp;
+import java.util.Date;
 
 /**
  * @author Geng Hui
@@ -22,6 +21,7 @@ import java.sql.Timestamp;
 @NoArgsConstructor
 @TableName(value = "t_stock_info")
 public class StockInfo {
+
     @TableId(type = IdType.AUTO)
     /**
      * id
@@ -29,48 +29,38 @@ public class StockInfo {
     private Integer id;
 
     /**
-     * code
+     * 股票名称
      */
-    private String code;
+    private String stockName;
 
     /**
-     * name
+     * 股票类型
      */
-    private String name;
+    private Integer stockType;
 
     /**
-     * exchange
+     * 股票交易所
      */
-    private String exchange;
+    private String stockExchange;
 
     /**
-     * abbreviation
+     * 股票代码
      */
-    private String abbreviation;
+    private String stockCode;
 
     /**
-     * state
+     * 股票状态
      */
-    private int state;
-
-    /**
-     * type
-     */
-    private int type;
+    private Integer stockState;
 
     /**
      * create_time
      */
-    private Timestamp createTime;
+    private Date createTime;
 
     /**
      * update_time
      */
-    private Timestamp updateTime;
-
-    /**
-     * description
-     */
-    private String description;
+    private Date updateTime;
 
 }
