@@ -15,4 +15,6 @@ public interface StockService {
 
     Result saveDailyRecord4EastMoney();
 
+    Result monitorStock();
+
 }

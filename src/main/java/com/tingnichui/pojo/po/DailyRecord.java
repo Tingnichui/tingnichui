@@ -65,7 +65,7 @@ public class DailyRecord {
      * 成交额(万)
      */
     @TableField(value = "amount")
-    private Long amount;
+    private BigDecimal amount;
 
     /**
      * 涨跌比率

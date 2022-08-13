@@ -1,9 +1,6 @@
 package com.tingnichui.util;
 
-import org.apache.http.Header;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
+import org.apache.http.*;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -30,6 +27,7 @@ import org.apache.http.util.EntityUtils;
 import javax.net.ssl.SSLContext;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.nio.charset.UnsupportedCharsetException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.KeyStore;
@@ -222,36 +220,36 @@ public class HttpUtil {
      * @return
      * @throws Exception
      */
-    public static String get(String url, Map<String, String> headers, String hostPort) {
-
-        String[] proxys = hostPort.split(":");
-        HttpHost proxy = new HttpHost(proxys[0], Integer.parseInt(proxys[1]));
-        CloseableHttpClient httpClient = getHttpClient(proxy);
-        HttpGet get = new HttpGet(url);
-        //设置参数
-        for (String key : headers.keySet()) {
-            get.setHeader(key, headers.get(key));
-        }
-
-        String respStr = null;
-        try {
-            CloseableHttpResponse response = httpClient.execute(get);
-            respStr = null;
-            HttpEntity entity = response.getEntity();
-
-            if (entity != null) {
-                respStr = EntityUtils.toString(entity, "UTF-8");
-            }
-
-            //释放连接
-            EntityUtils.consume(response.getEntity());
-            response.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return respStr;
-    }
+//    public static String get(String url, Map<String, String> headers, String hostPort) {
+//
+//        String[] proxys = hostPort.split(":");
+//        HttpHost proxy = new HttpHost(proxys[0], Integer.parseInt(proxys[1]));
+//        CloseableHttpClient httpClient = getHttpClient(proxy);
+//        HttpGet get = new HttpGet(url);
+//        //设置参数
+//        for (String key : headers.keySet()) {
+//            get.setHeader(key, headers.get(key));
+//        }
+//
+//        String respStr = null;
+//        try {
+//            CloseableHttpResponse response = httpClient.execute(get);
+//            respStr = null;
+//            HttpEntity entity = response.getEntity();
+//
+//            if (entity != null) {
+//                respStr = EntityUtils.toString(entity, "UTF-8");
+//            }
+//
+//            //释放连接
+//            EntityUtils.consume(response.getEntity());
+//            response.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return respStr;
+//    }
 
     public static String get(String url, Map<String, String> headers) throws Exception {
 
@@ -273,6 +271,35 @@ public class HttpUtil {
         //释放连接
         EntityUtils.consume(response.getEntity());
         response.close();
+
+        return respStr;
+    }
+
+    public static String get(String url, Map<String, String> headers,String chartSet) {
+
+        String respStr = null;
+        try {
+            CloseableHttpClient httpClient = getHttpClient();
+            HttpGet get = new HttpGet(url);
+            //设置参数
+            for (String key : headers.keySet()) {
+                get.setHeader(key, headers.get(key));
+            }
+
+            CloseableHttpResponse response = httpClient.execute(get);
+            respStr = null;
+            HttpEntity entity = response.getEntity();
+
+            if (entity != null) {
+                respStr = EntityUtils.toString(entity, chartSet);
+            }
+
+            //释放连接
+            EntityUtils.consume(response.getEntity());
+            response.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return respStr;
     }
@@ -472,28 +499,37 @@ public class HttpUtil {
      * @return
      * @throws Exception
      */
-    public static String post(String url, String content, Map<String, String> headers) throws Exception {
-
-        CloseableHttpClient httpClient = getHttpClient();
-        HttpPost post = new HttpPost(url);
-        //设置参数
-        StringEntity stringEntity = new StringEntity(content, "UTF-8");
-        post.setEntity(stringEntity);
-        for (String key : headers.keySet()) {
-            post.setHeader(key, headers.get(key));
-        }
-        CloseableHttpResponse response = httpClient.execute(post);
+    public static String post(String url, String content, Map<String, String> headers) {
 
         String respStr = null;
-        HttpEntity entity = response.getEntity();
+        try {
+            CloseableHttpClient httpClient = getHttpClient();
+            HttpPost post = new HttpPost(url);
+            //设置参数
+            StringEntity stringEntity = new StringEntity(content, "UTF-8");
+            post.setEntity(stringEntity);
+            for (String key : headers.keySet()) {
+                post.setHeader(key, headers.get(key));
+            }
+            CloseableHttpResponse response = httpClient.execute(post);
 
-        if (entity != null) {
-            respStr = EntityUtils.toString(entity, "UTF-8");
+            respStr = null;
+            HttpEntity entity = response.getEntity();
+
+            if (entity != null) {
+                respStr = EntityUtils.toString(entity, "UTF-8");
+            }
+
+            //释放连接
+            EntityUtils.consume(response.getEntity());
+            response.close();
+        } catch (UnsupportedCharsetException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
-
-        //释放连接
-        EntityUtils.consume(response.getEntity());
-        response.close();
 
         return respStr;
     }

@@ -111,21 +111,8 @@ public class StockUtil {
         return sb.toString();
     }
 
-    private BigDecimal calcIncreaseRate(BigDecimal a, BigDecimal b) {
-        return this.div(this.sub(a, b), b);
-    }
-
-
-    private BigDecimal sub(BigDecimal a, BigDecimal b) {
-        return a.subtract(b);
-    }
-
-    private BigDecimal div(BigDecimal a, BigDecimal b) {
-        return this.div(a, b, 6);
-    }
-
-    private BigDecimal div(BigDecimal a, BigDecimal b, int scale) {
-        return a.divide(b, scale, BigDecimal.ROUND_HALF_UP);
+    public static BigDecimal calcIncreaseRate(BigDecimal a, BigDecimal b) {
+        return DecimalUtil.div(DecimalUtil.sub(a, b), b);
     }
 
     public static boolean isOriName(String name) {
