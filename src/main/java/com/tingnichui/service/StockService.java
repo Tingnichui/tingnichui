@@ -2,6 +2,8 @@ package com.tingnichui.service;
 
 import com.tingnichui.pojo.vo.Result;
 
+import java.util.Date;
+
 /**
  * @author Geng Hui
  * @version 1.0
@@ -15,10 +17,16 @@ public interface StockService {
 
     Result saveDailyRecord4EastMoney();
 
+    Result updateDailyIndexAverage();
+
     Result monitorStock();
 
     Result updateStockInfo();
 
     Result updateCurrentYear();
+
+    boolean isBusinessTime(Date date);
+
+    boolean isBusinessDate(Date date);
 
 }

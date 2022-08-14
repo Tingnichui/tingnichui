@@ -54,6 +54,11 @@ public class StockInfo {
     private Integer stockState;
 
     /**
+     * 股票状态
+     */
+    private Boolean isMonitor;
+
+    /**
      * create_time
      */
     private Date createTime;

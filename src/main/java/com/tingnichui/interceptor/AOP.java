@@ -1,6 +1,8 @@
 package com.tingnichui.interceptor;
 
+import cn.hutool.core.date.DateUtil;
 import com.alibaba.fastjson.JSON;
+import com.tingnichui.util.DingdingUtil;
 import com.tingnichui.util.ResultGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,7 +56,8 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            log.error("系统异常",throwable);
+            log.error("CONTROLLER异常",throwable);
+            DingdingUtil.sendMsg(DateUtil.now() + "-CONTROLLER异常");
             return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
@@ -94,7 +97,8 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            log.error("系统异常",throwable);
+            log.error("SERVICE异常",throwable);
+            DingdingUtil.sendMsg(DateUtil.now() + "-SERVICE异常");
             return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
@@ -118,6 +122,10 @@ public class AOP {
         try {
             obj = point.proceed();
             return obj;
+        } catch (Throwable throwable){
+            log.error("DAO异常",throwable);
+            DingdingUtil.sendMsg(DateUtil.now() + "-DAO异常");
+            return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             Object[] args = point.getArgs();

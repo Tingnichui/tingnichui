@@ -3,20 +3,17 @@ package com.tingnichui;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import com.tingnichui.dao.DailyIndexMapper;
+import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.UserMapper;
-import com.tingnichui.pojo.po.DailyIndex;
 import com.tingnichui.service.StockService;
 import com.tingnichui.service.impl.StockServiceImpl;
+import com.tingnichui.task.ScheduledTask;
 import com.tingnichui.util.BaiduUtil;
 import com.tingnichui.util.DingdingUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
 
 
 @SpringBootTest
@@ -28,6 +25,9 @@ class ChunhuitradeApplicationTests {
     @Resource
     private UserMapper userMapper;
 
+    @Resource
+    private StockInfoMapper stockInfoMapper;
+
 
     @Resource
     private StockService stockService;
@@ -37,6 +37,17 @@ class ChunhuitradeApplicationTests {
 
     @Resource
     private DailyIndexMapper dailyIndexMapper;
+
+    @Resource
+    private ScheduledTask scheduledTask;
+
+    @Test
+    void ScheduledTaskTest() {
+//        scheduledTask.updateStockInfoTask();
+        scheduledTask.saveDailyIndexTask();
+//        scheduledTask.monitorStockTask();
+//        scheduledTask.updateDailyIndexAverageTask();
+    }
 
     @Test
     void BaiduUtilTest() {
