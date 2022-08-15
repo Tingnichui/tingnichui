@@ -14,21 +14,21 @@ public class ResultGenerator {
 
     public static Result genSuccessResult() {
         Result result = new Result();
-        result.setResultCode(RESULT_CODE_SUCCESS);
+        result.setCode(RESULT_CODE_SUCCESS);
         result.setMessage(DEFAULT_SUCCESS_MESSAGE);
         return result;
     }
 
     public static Result genSuccessResult(String message) {
         Result result = new Result();
-        result.setResultCode(RESULT_CODE_SUCCESS);
+        result.setCode(RESULT_CODE_SUCCESS);
         result.setMessage(message);
         return result;
     }
 
     public static Result genSuccessResult(Object data) {
         Result result = new Result();
-        result.setResultCode(RESULT_CODE_SUCCESS);
+        result.setCode(RESULT_CODE_SUCCESS);
         result.setMessage(DEFAULT_SUCCESS_MESSAGE);
         result.setData(data);
         return result;
@@ -36,7 +36,7 @@ public class ResultGenerator {
 
     public static Result genFailResult(String message) {
         Result result = new Result();
-        result.setResultCode(RESULT_CODE_SERVER_ERROR);
+        result.setCode(RESULT_CODE_SERVER_ERROR);
         if (StringUtils.isEmpty(message)) {
             result.setMessage(DEFAULT_FAIL_MESSAGE);
         } else {
@@ -47,7 +47,7 @@ public class ResultGenerator {
 
     public static Result genErrorResult(String code, String message) {
         Result result = new Result();
-        result.setResultCode(code);
+        result.setCode(code);
         result.setMessage(message);
         return result;
     }
