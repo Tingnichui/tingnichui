@@ -69,7 +69,7 @@ public class AOP {
     }
 
     /** service日志 **/
-    @Around("execution(* com.tingnichui.service.*.*(..))")
+//    @Around("execution(* com.tingnichui.service.*.*(..))")
     public Object serviceAround(ProceedingJoinPoint point) {
         //执行链条ID
         MDC.put("processId", UUID.randomUUID().toString().replaceAll("-",""));

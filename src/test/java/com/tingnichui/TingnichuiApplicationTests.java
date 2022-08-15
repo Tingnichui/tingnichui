@@ -17,7 +17,7 @@ import javax.annotation.Resource;
 
 
 @SpringBootTest
-class ChunhuitradeApplicationTests {
+class TingnichuiApplicationTests {
 
     @Resource
     private BaiduUtil baiduUtil;
