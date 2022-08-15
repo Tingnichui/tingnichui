@@ -1,6 +1,5 @@
 package com.tingnichui.controller;
 
-import cn.hutool.core.date.DateUtil;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
@@ -18,14 +17,13 @@ public class CashController {
     @Resource
     private CashService cashService;
 
+    @RequestMapping("health")
+    public Result health() {
+        return ResultGenerator.genSuccessResult("HEALTH");
+    }
 
     @RequestMapping("save/{tradeAmount}/{actualAmount}")
     public Result save(@PathVariable BigDecimal tradeAmount, @PathVariable BigDecimal actualAmount) {
         return cashService.save(tradeAmount, actualAmount);
-    }
-
-    @RequestMapping("health")
-    public Result health() {
-        return ResultGenerator.genSuccessResult(DateUtil.now());
     }
 }

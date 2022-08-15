@@ -1,8 +1,8 @@
 package com.tingnichui.controller;
 
-import cn.hutool.core.date.DateUtil;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.TradeService;
+import com.tingnichui.util.ResultGenerator;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,8 +18,8 @@ public class TradeController {
     private TradeService tradeService;
 
     @GetMapping("health")
-    public String health(){
-        return DateUtil.now();
+    public Result health() {
+        return ResultGenerator.genSuccessResult("HEALTH");
     }
 
     @PostMapping("buy")
@@ -33,7 +33,7 @@ public class TradeController {
     }
 
     @PostMapping("cancel")
-    public Result cancel(){
+    public Result cancel() {
         return tradeService.cancel();
     }
 

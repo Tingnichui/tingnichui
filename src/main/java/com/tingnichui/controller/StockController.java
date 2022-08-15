@@ -1,8 +1,8 @@
 package com.tingnichui.controller;
 
-import cn.hutool.core.date.DateUtil;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
+import com.tingnichui.util.ResultGenerator;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,19 +21,9 @@ public class StockController {
     private StockService stockService;
 
     @RequestMapping("/health")
-    public String health() {
-        return DateUtil.now();
+    public Result health() {
+        return ResultGenerator.genSuccessResult("HEALTH");
     }
-
-//    @RequestMapping("/updateStock4xueqiu")
-//    public Result updateStock4xueqiu() {
-//        return stockService.updateStock4xueqiu();
-//    }
-
-//    @RequestMapping("/saveDailyRecord4xueqiu")
-//    public Result saveDailyRecord4xueqiu() {
-//        return stockService.saveDailyRecord4xueqiu();
-//    }
 
     @RequestMapping("/saveDailyRecord4EastMoney")
     public Result saveDailyRecord4EastMoney() {
