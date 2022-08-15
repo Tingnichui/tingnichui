@@ -25,14 +25,24 @@ public class StockController {
         return DateUtil.now();
     }
 
-    @RequestMapping("/updateStock4xueqiu")
-    public Result updateStock4xueqiu() {
-        return stockService.updateStock4xueqiu();
+//    @RequestMapping("/updateStock4xueqiu")
+//    public Result updateStock4xueqiu() {
+//        return stockService.updateStock4xueqiu();
+//    }
+
+//    @RequestMapping("/saveDailyRecord4xueqiu")
+//    public Result saveDailyRecord4xueqiu() {
+//        return stockService.saveDailyRecord4xueqiu();
+//    }
+
+    @RequestMapping("/saveDailyRecord4EastMoney")
+    public Result saveDailyRecord4EastMoney() {
+        return stockService.saveDailyRecord4EastMoney();
     }
 
-    @RequestMapping("/saveDailyRecord4xueqiu")
-    public Result saveDailyRecord4xueqiu() {
-        return stockService.saveDailyRecord4xueqiu();
+    @RequestMapping("/updateStockInfo")
+    public Result updateStockInfo() {
+        return stockService.updateStockInfo();
     }
 
 }
