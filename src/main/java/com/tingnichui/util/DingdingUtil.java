@@ -17,7 +17,7 @@ public class DingdingUtil {
 
     public static void sendMsg(String content){
         HashMap<String, Object> text = new HashMap<>();
-        text.put("content", "ChunHui\n" + content);
+        text.put("content", "Tingnichui\n" + content);
 
         HashMap<String, Object> params = new HashMap<>();
         params.put("msgtype", "text");

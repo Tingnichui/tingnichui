@@ -1,8 +1,11 @@
 package com.tingnichui.task;
 
+import cn.hutool.core.util.IdUtil;
+import cn.hutool.core.util.RandomUtil;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.DingdingUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -27,8 +30,11 @@ public class ScheduledTask {
      */
     @Scheduled(cron = "0 0 9 ? * MON-FRI")
     public void updateStockInfoTask() {
-        boolean isBusinessTime = stockService.isBusinessDate(new Date());
-        if (!isBusinessTime) {
+        MDC.put("processId", IdUtil.simpleUUID());
+        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        log.info("开始更新股票信息" + isBusinessDate);
+        if (!isBusinessDate) {
+            log.info("非工作日-结束更新股票信息");
             return;
         }
         try {
@@ -37,6 +43,7 @@ public class ScheduledTask {
             DingdingUtil.sendMsg("更新股票信息异常!");
             log.error("更新股票信息异常", e);
         }
+        log.info("结束更新股票信息");
     }
 
 
@@ -45,8 +52,10 @@ public class ScheduledTask {
      */
     @Scheduled(cron = "0 0 17,18,19 ? * MON-FRI")
     public void saveDailyIndexTask() {
-        boolean isBusinessTime = stockService.isBusinessDate(new Date());
-        if (!isBusinessTime) {
+        MDC.put("processId", IdUtil.simpleUUID());
+        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        log.info("开始保存日线数据" + isBusinessDate);
+        if (!isBusinessDate) {
             return;
         }
         try {
@@ -55,6 +64,7 @@ public class ScheduledTask {
             DingdingUtil.sendMsg("保存日线数据异常!");
             log.error("保存日线数据异常", e);
         }
+        log.info("结束保存日线数据");
     }
 
     /**
@@ -62,8 +72,10 @@ public class ScheduledTask {
      */
     @Scheduled(cron = "0 0 20,21,22 ? * MON-FRI")
     public void updateDailyIndexAverageTask() {
-        boolean isBusinessTime = stockService.isBusinessDate(new Date());
-        if (!isBusinessTime) {
+        MDC.put("processId", IdUtil.simpleUUID());
+        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        log.info("开始更新股票均线" + isBusinessDate);
+        if (!isBusinessDate) {
             return;
         }
         try {
@@ -72,15 +84,18 @@ public class ScheduledTask {
             DingdingUtil.sendMsg("保存日线数据异常!");
             log.error("保存日线数据异常", e);
         }
+        log.info("结束更新股票均线");
     }
 
     /**
      * 实时监控监控
      */
 //    @Scheduled(cron = "0,15,30,45 * 9,10,11,13,14 ? * MON-FRI")
-    @Scheduled(cron = "0 0 9,10,11,13,14 ? * MON-FRI")
+    @Scheduled(cron = "0 0/10 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
+        MDC.put("processId", IdUtil.simpleUUID());
         boolean isBusinessTime = stockService.isBusinessTime(new Date());
+        log.info("开始实时监控监控" + isBusinessTime);
         if (!isBusinessTime) {
             return;
         }
@@ -91,6 +106,7 @@ public class ScheduledTask {
             DingdingUtil.sendMsg("实时监测股票数据异常!");
             log.error("实时监测股票数据异常", e);
         }
+        log.info("结束实时监控监控");
     }
 
 
