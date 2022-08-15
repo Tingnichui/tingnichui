@@ -24,8 +24,7 @@ public class DingdingUtil {
         params.put("text", text);
         Map<String,String> headers = new HashMap<>();
         headers.put("Content-type", "application/json; charset=utf-8");
-        String result = HttpUtil.post(url, JSON.toJSONString(params) ,headers);
-        System.err.println(result);
+        HttpUtil.post(url, JSON.toJSONString(params) ,headers);
     }
 
 

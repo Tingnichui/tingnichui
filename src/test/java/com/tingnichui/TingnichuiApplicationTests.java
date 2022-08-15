@@ -43,6 +43,8 @@ class TingnichuiApplicationTests {
 
     @Test
     void ScheduledTaskTest() {
+
+
 //        scheduledTask.updateStockInfoTask();
 //        scheduledTask.saveDailyIndexTask();
 //        scheduledTask.monitorStockTask();
