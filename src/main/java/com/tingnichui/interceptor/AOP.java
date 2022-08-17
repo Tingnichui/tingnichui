@@ -122,10 +122,10 @@ public class AOP {
         try {
             obj = point.proceed();
             return obj;
-        } catch (Throwable throwable){
-            log.error("DAO异常",throwable);
-            DingdingUtil.sendMsg(DateUtil.now() + "-DAO异常");
-            return ResultGenerator.genErrorResult("B001","系统错误");
+//        } catch (Throwable throwable){
+//            log.error("DAO异常",throwable);
+//            DingdingUtil.sendMsg(DateUtil.now() + "-DAO异常");
+//            return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             Object[] args = point.getArgs();
