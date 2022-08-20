@@ -1,21 +1,26 @@
 package com.tingnichui;
 
-import cn.hutool.core.date.DateTime;
-import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
+import com.tingnichui.dao.StockTradeStrategyMapper;
 import com.tingnichui.dao.UserMapper;
+import com.tingnichui.pojo.po.StockTradeStrategy;
 import com.tingnichui.service.StockService;
 import com.tingnichui.service.impl.StockServiceImpl;
 import com.tingnichui.task.ScheduledTask;
 import com.tingnichui.util.BaiduUtil;
-import com.tingnichui.util.DingdingUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import javax.annotation.Resource;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
-
+@Slf4j
 @SpringBootTest
 class TingnichuiApplicationTests {
 
@@ -24,6 +29,9 @@ class TingnichuiApplicationTests {
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private StockTradeStrategyMapper stockTradeStrategyMapper;
 
     @Resource
     private StockInfoMapper stockInfoMapper;
@@ -42,43 +50,40 @@ class TingnichuiApplicationTests {
     private ScheduledTask scheduledTask;
 
     @Test
-    void ScheduledTaskTest() {
-
-
-//        scheduledTask.updateStockInfoTask();
-//        scheduledTask.saveDailyIndexTask();
-//        scheduledTask.monitorStockTask();
-//        scheduledTask.updateDailyIndexAverageTask();
+    void monitorTest() {
+        stockService.monitorStock();
     }
 
     @Test
-    void BaiduUtilTest() {
-        System.err.println(baiduUtil.accurate());
-    }
+    void TradeRule() {
 
-    @Test
-    void stockServiceTest() {
+        // 买点
+//        StockTradeStrategy buyStrategy = new StockTradeStrategy();
+//        buyStrategy.setStockCode("601288");
+//        buyStrategy.setStrategyType("buy");
+//        buyStrategy.setIsWork(true);
+//        buyStrategy.setMonitorType("closePrice");
+//        buyStrategy.setCompareMethod("lt");
+//        buyStrategy.setTargetType("preClosePrice");
+//        buyStrategy.setTargetCalculationType("percentage");
+//        buyStrategy.setTargetValue(new BigDecimal("-2"));
+//        buyStrategy.setTragetAmount(1);
+//        stockTradeStrategyMapper.insert(buyStrategy);
+//        stockTradeStrategyMapper.update(buyStrategy,new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode,buyStrategy.getStockCode()));
 
-//        boolean businessDate = stockServiceImpl.isBusinessDate(DateUtil.parseDate("2022-06-03"));
-        boolean businessDate = stockServiceImpl.isBusinessDate(DateUtil.parseDate("2022-06-01"));
-        System.err.println(businessDate);
-//        stockService.updateCurrentYear();
-//        stockService.updateStockInfo();
+        // 卖点
+        StockTradeStrategy sellStrategy = new StockTradeStrategy();
+        sellStrategy.setStockCode("601288");
+        sellStrategy.setStrategyType("sell");
+        sellStrategy.setIsWork(true);
+        sellStrategy.setMonitorType("closePrice");
+        sellStrategy.setCompareMethod("gt");
+        sellStrategy.setTargetType("buyPrice");
+        sellStrategy.setTargetCalculationType("percentage");
+        sellStrategy.setTargetValue(new BigDecimal("1"));
+        sellStrategy.setTragetAmount(1);
+//        stockTradeStrategyMapper.insert(sellStrategy);
+        stockTradeStrategyMapper.update(sellStrategy,new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode,sellStrategy.getStockCode()));
 
-//        stockService.updateStock4xueqiu();
-//        stockService.saveDailyRecord4xueqiu();
-//        stockServiceImpl.doSaveDailyRecord("SZ300100","双林股份");
-//        stockService.saveDailyRecord4EastMoney();
-//        stockService.monitorStock();
-    }
-
-    @Test
-    void UtilTest() {
-        DingdingUtil.sendMsg("tingnichui");
-    }
-
-    public static void main(String[] args) {
-        DateTime dateTime = DateUtil.date(Long.parseLong("1660233600000"));
-        System.err.println(dateTime);
     }
 }

@@ -11,15 +11,18 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
+import com.tingnichui.dao.StockTradeRecordMapper;
+import com.tingnichui.dao.StockTradeStrategyMapper;
 import com.tingnichui.pojo.po.DailyIndex;
 import com.tingnichui.pojo.po.StockInfo;
+import com.tingnichui.pojo.po.StockTradeRecord;
+import com.tingnichui.pojo.po.StockTradeStrategy;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -52,6 +55,12 @@ public class StockServiceImpl implements StockService {
 
     @Resource
     private StockInfoMapper stockInfoMapper;
+
+    @Resource
+    private StockTradeStrategyMapper stockTradeStrategyMapper;
+
+    @Resource
+    private StockTradeRecordMapper stockTradeRecordMapper;
 
     public static String getHttpGetResponseString(String url, String cookie) {
         String body = "";
@@ -323,35 +332,93 @@ public class StockServiceImpl implements StockService {
     @Override
     public Result monitorStock() {
         // 新浪
-        List<StockInfo> selectList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getIsMonitor, Boolean.TRUE));
-        List<String> codeList = selectList.stream().map(v -> StockUtil.getFullCode(v.getStockCode())).collect(Collectors.toList());
-        List<DailyIndex> dailyIndexList = this.getDailyIndex(codeList);
+        List<StockInfo> monitorStockList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getIsMonitor, Boolean.TRUE));
+        List<String> codeList = monitorStockList.stream().map(v -> StockUtil.getFullCode(v.getStockCode())).collect(Collectors.toList());
+        List<DailyIndex> nowDailyIndexList = this.getDailyIndex(codeList);
 
 
         StringBuilder sb = new StringBuilder();
-        for (StockInfo stockInfo : selectList) {
-            String code = stockInfo.getStockCode();
-            DailyIndex dailyIndex = dailyIndexList.stream().filter(d -> d.getStockCode().contains(stockInfo.getStockCode())).findAny().orElse(null);
+        for (StockInfo stockInfo : monitorStockList) {
+
+            String stockCode = stockInfo.getStockCode();
+            DailyIndex dailyIndex = nowDailyIndexList.stream().filter(d -> d.getStockCode().contains(stockCode)).findAny().orElse(null);
             if (dailyIndex == null) {
                 continue;
             }
-            if (lastPriceMap.containsKey(code)) {
-                BigDecimal lastPrice = lastPriceMap.get(code);
-                double rate = Math.abs(StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(), lastPrice).doubleValue());
-//                if (Double.compare(rate, stockInfo.getRate().doubleValue()) >= 0) {
-                lastPriceMap.put(code, dailyIndex.getClosePrice());
-                String name = stockInfo.getStockName();
-                String body = String.format("%s:当前价格:%.02f, 涨幅%.02f%%", name,
-                        dailyIndex.getClosePrice().doubleValue(),
-                        StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(),
-                                dailyIndex.getPreClosePrice()).movePointRight(2).doubleValue());
-                sb.append(body + "\n");
-//                }
-            } else {
-                lastPriceMap.put(code, dailyIndex.getPreClosePrice());
-                String name = stockInfo.getStockName();
-                String body = String.format("%s:当前价格:%.02f", name, dailyIndex.getClosePrice().doubleValue());
-                sb.append(body + "\n");
+
+            // 注：所有策略在当天只能生效一次
+            // 买点
+            List<StockTradeStrategy> buyStrategyList = stockTradeStrategyMapper.selectList(new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode, stockCode).eq(StockTradeStrategy::getStrategyType, "buy"));
+            for (StockTradeStrategy buyStrategy : buyStrategyList) {
+                // 去股票交易表表查看是否有今日达成的策略交易
+                Integer todayTradeCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getTradeDate, new java.sql.Date(System.currentTimeMillis())).eq(StockTradeRecord::getStockTradeStrategyId, buyStrategy.getId()));
+                if (todayTradeCount > 0) {
+                    continue;
+                }
+
+                // 买点 符合买点要求就买入
+                if (this.getStrategyResult(null,dailyIndex, buyStrategy)) {
+                    // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
+                    StockTradeRecord stockTradeRecord = new StockTradeRecord();
+                    stockTradeRecord.setStockCode(stockCode);
+                    stockTradeRecord.setStockTradeStrategyId(buyStrategy.getId());
+                    stockTradeRecord.setTradeType("buy");
+                    stockTradeRecord.setTradePrice(dailyIndex.getClosePrice());
+                    stockTradeRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
+                    stockTradeRecord.setTradeAmount(buyStrategy.getTragetAmount());
+                    stockTradeRecord.setIsDone(false);
+                    int insert = stockTradeRecordMapper.insert(stockTradeRecord);
+                    if (insert > 0) {
+                        String body = String.format("买入%s:当前价格:%.02f, 涨幅%.02f%%",
+                                stockInfo.getStockName(),
+                                dailyIndex.getClosePrice().doubleValue(),
+                                StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(), dailyIndex.getPreClosePrice()).movePointRight(2).doubleValue());
+                        sb.append(body + "\n");
+
+                    }
+                }
+            }
+
+            // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
+            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone,false));
+            int buySum = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
+            if (!stockTradeRecordList.isEmpty()) {
+                // 获取卖点策略
+                List<StockTradeStrategy> sellStrategyList = stockTradeStrategyMapper.selectList(new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode, stockCode).eq(StockTradeStrategy::getStrategyType, "sell"));
+                for (StockTradeRecord buyRecord : stockTradeRecordList) {
+                    for (StockTradeStrategy sellStrategy : sellStrategyList) {
+                        // 去股票交易表表查看是否有今日达成的策略交易
+                        Integer todayTradeCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getTradeDate, new java.sql.Date(System.currentTimeMillis())).eq(StockTradeRecord::getStockTradeStrategyId, sellStrategy.getId()));
+                        if (todayTradeCount > 0) {
+                            continue;
+                        }
+                        Integer sellAmount = sellStrategy.getTragetAmount();
+                        if (buySum >= sellAmount && this.getStrategyResult(buyRecord,dailyIndex,sellStrategy)) {
+                            // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
+                            // 更新买入记录
+                            buyRecord.setIsDone(true);
+                            stockTradeRecordMapper.updateById(buyRecord);
+                            // 插入卖出记录
+                            StockTradeRecord sellRecord = new StockTradeRecord();
+                            sellRecord.setStockCode(stockCode);
+                            sellRecord.setStockTradeStrategyId(sellStrategy.getId());
+                            sellRecord.setTradeType("sell");
+                            sellRecord.setTradePrice(dailyIndex.getClosePrice());
+                            sellRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
+                            sellRecord.setTradeAmount(sellAmount);
+                            sellRecord.setIsDone(false);
+                            int insert = stockTradeRecordMapper.insert(sellRecord);
+                            if (insert > 0) {
+                                buySum -= sellAmount;
+                                String body = String.format("卖出%s:买入价格:%.02f, 卖出价格:%.02f",
+                                        stockInfo.getStockName(),
+                                        buyRecord.getTradePrice(),
+                                        sellRecord.getTradePrice());
+                                sb.append(body + "\n");
+                            }
+                        }
+                    }
+                }
             }
         }
         if (sb.length() > 0) {
@@ -359,6 +426,125 @@ public class StockServiceImpl implements StockService {
             DingdingUtil.sendMsg(sb.toString());
         }
         return ResultGenerator.genSuccessResult("新浪-股价实时检测中！");
+    }
+
+    private boolean getStrategyResult(StockTradeRecord stockTradeRecord,DailyIndex dailyIndex, StockTradeStrategy buyStrategy) {
+
+        if (null == buyStrategy) {
+            DingdingUtil.sendMsg("买入策略不存在");
+            return Boolean.FALSE;
+        }
+
+        if (!buyStrategy.getIsWork()) {
+            return Boolean.FALSE;
+        }
+
+
+            // 获取操作点信息
+        String compareMethod = buyStrategy.getCompareMethod();
+        String targetCalculationType = buyStrategy.getTargetCalculationType();
+        String targetType = buyStrategy.getTargetType();
+        String monitorType = buyStrategy.getMonitorType();
+        BigDecimal targetValue = buyStrategy.getTargetValue();
+        if (StringUtils.isBlank(targetType) || StringUtils.isBlank(targetCalculationType) || StringUtils.isBlank(monitorType) || null == targetValue) {
+            DingdingUtil.sendMsg("交易策略参数不完整");
+            return Boolean.FALSE;
+        }
+
+        // 根据监测类型获取当前监测值
+        BigDecimal nowMonitorValue = null;
+        if ("preClosePrice".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getPreClosePrice();
+        } else if ("openPrice".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getOpenPrice();
+        } else if ("closePrice".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getClosePrice();
+        } else if ("highestPrice".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getHighestPrice();
+        } else if ("lowestPrice".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getLowestPrice();
+        } else if ("tradeVolume".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getTradeVolume();
+        } else if ("tradeAmount".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getTradeAmount();
+        } else if ("rurnoverRate".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getRurnoverRate();
+        } else if ("ma5".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getMa5();
+        } else if ("ma10".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getMa10();
+        } else if ("ma20".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getMa20();
+        } else if ("ma100".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getMa100();
+        } else if ("ma500".equals(monitorType)) {
+            nowMonitorValue = dailyIndex.getMa500();
+        } else {
+            DingdingUtil.sendMsg("交易策略未获取到当前值！");
+            return Boolean.FALSE;
+        }
+
+
+        // 根据目标类型获取当前值,并计算目标值
+        if ("percentage".equals(targetCalculationType)) {
+            BigDecimal percentage = NumberUtil.add(NumberUtil.div(targetValue, 100), 1);
+            if ("tradePrice".equals(targetType)) {
+                if (null == stockTradeRecord) {
+                    return Boolean.FALSE;
+                } else {
+                    targetValue = stockTradeRecord.getTradePrice();
+                }
+            }else if ("preClosePrice".equals(targetType)) {
+                targetValue = dailyIndex.getPreClosePrice();
+            } else if ("openPrice".equals(targetType)) {
+                targetValue = dailyIndex.getOpenPrice();
+            } else if ("closePrice".equals(targetType)) {
+                targetValue = dailyIndex.getClosePrice();
+            } else if ("highestPrice".equals(targetType)) {
+                targetValue = dailyIndex.getHighestPrice();
+            } else if ("lowestPrice".equals(targetType)) {
+                targetValue = dailyIndex.getLowestPrice();
+            } else if ("tradeVolume".equals(targetType)) {
+                targetValue = dailyIndex.getTradeVolume();
+            } else if ("tradeAmount".equals(targetType)) {
+                targetValue = dailyIndex.getTradeAmount();
+            } else if ("rurnoverRate".equals(targetType)) {
+                targetValue = dailyIndex.getRurnoverRate();
+            } else if ("ma5".equals(targetType)) {
+                targetValue = dailyIndex.getMa5();
+            } else if ("ma10".equals(targetType)) {
+                targetValue = dailyIndex.getMa10();
+            } else if ("ma20".equals(targetType)) {
+                targetValue = dailyIndex.getMa20();
+            } else if ("ma100".equals(targetType)) {
+                targetValue = dailyIndex.getMa100();
+            } else if ("ma500".equals(targetType)) {
+                targetValue = dailyIndex.getMa500();
+            } else {
+                DingdingUtil.sendMsg("交易策略未获取到当前值！");
+                return Boolean.FALSE;
+            }
+            targetValue = NumberUtil.mul(targetValue, percentage);
+        } else if ("fixed".equals(targetCalculationType)) {
+            targetValue = targetValue;
+        } else {
+            DingdingUtil.sendMsg("交易策略没有设定目标值");
+            return Boolean.FALSE;
+        }
+
+        // 将对比值与目标值根据比较类型进行判断
+        if ("gt".equals(compareMethod) && nowMonitorValue.compareTo(targetValue) > 0) {
+            return Boolean.TRUE;
+        } else if ("lt".equals(compareMethod) && nowMonitorValue.compareTo(targetValue) < 0) {
+            return Boolean.TRUE;
+        } else if ("eq".equals(compareMethod) && nowMonitorValue.compareTo(targetValue) == 0) {
+            return Boolean.TRUE;
+        } else {
+            DingdingUtil.sendMsg("交易策略没有设定比较方式！");
+        }
+
+        return Boolean.FALSE;
+
     }
 
     @Override
@@ -536,7 +722,7 @@ public class StockServiceImpl implements StockService {
                 BigDecimal closingPrice = new BigDecimal(strs[3]);
                 BigDecimal highestPrice = new BigDecimal(strs[4]);
                 BigDecimal lowestPrice = new BigDecimal(strs[5]);
-                long tradingVolume = Long.parseLong(strs[8]);
+                BigDecimal tradingVolume = new BigDecimal(strs[8]);
                 BigDecimal tradingValue = new BigDecimal(strs[9]);
                 Date date = DateUtil.parseDate(strs[30]);
 
@@ -570,7 +756,7 @@ public class StockServiceImpl implements StockService {
         BigDecimal closingPrice = new BigDecimal(strs[3]);
         BigDecimal highestPrice = new BigDecimal(strs[4]);
         BigDecimal lowestPrice = new BigDecimal(strs[5]);
-        long tradingVolume = Long.parseLong(strs[8]);
+        BigDecimal tradingVolume = new BigDecimal(strs[8]);
         BigDecimal tradingValue = new BigDecimal(strs[9]);
         Date date;
         try {
@@ -627,7 +813,7 @@ public class StockServiceImpl implements StockService {
         final String currentDateStr = DateUtil.format(new Date(), "yyyy-MM-dd");
         return dailyIndexList.stream().filter(dailyIndex ->
                 DecimalUtil.bg(dailyIndex.getOpenPrice(), BigDecimal.ZERO)
-                        && dailyIndex.getTradeVolume() > 0
+                        && DecimalUtil.bg(dailyIndex.getTradeVolume(), BigDecimal.ZERO)
                         && DecimalUtil.bg(dailyIndex.getTradeAmount(), BigDecimal.ZERO)
                         && currentDateStr.equals(DateUtil.format(dailyIndex.getStockDate(), "yyyy-MM-dd"))
         ).collect(Collectors.toList());
@@ -667,7 +853,7 @@ public class StockServiceImpl implements StockService {
             dailyIndex.setStockDate(new java.sql.Date(System.currentTimeMillis()));
             dailyIndex.setStockCode(stockInfo.getStockCode());
             dailyIndex.setClosePrice(null == closePrice ? null : new BigDecimal(closePrice).movePointLeft(2));
-            dailyIndex.setTradeVolume(null == tradeVolume ? null : (long) (tradeVolume * 100));
+            dailyIndex.setTradeVolume(null == tradeVolume ? null : NumberUtil.mul(tradeVolume.toString(), "100"));
             dailyIndex.setTradeAmount(null == tradeAmount ? null : new BigDecimal(tradeAmount));
             dailyIndex.setRurnoverRate(null == rurnoverRate ? null : new BigDecimal(rurnoverRate).movePointLeft(2));
             dailyIndex.setHighestPrice(null == highestPrice ? null : new BigDecimal(highestPrice).movePointLeft(2));

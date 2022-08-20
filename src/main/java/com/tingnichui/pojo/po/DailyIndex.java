@@ -62,7 +62,7 @@ public class DailyIndex {
     /**
      * 交易量
      */
-    private Long tradeVolume;
+    private BigDecimal tradeVolume;
 
     /**
      * 交易总金额
