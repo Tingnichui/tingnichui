@@ -35,4 +35,9 @@ public class StockController {
         return stockService.updateStockInfo();
     }
 
+    @RequestMapping("/updateDailyIndexAverage")
+    public Result updateDailyIndexAverage() {
+        return stockService.updateDailyIndexAverage();
+    }
+
 }

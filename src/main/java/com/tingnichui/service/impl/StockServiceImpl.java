@@ -289,7 +289,7 @@ public class StockServiceImpl implements StockService {
             Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getId, dailyIndex.getId()));
 
 
-            if (count > 5) {
+            if (count >= 5) {
                 count = count > 500 ? 500 : count;
                 // 按日期倒序获得所有记录
                 List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
@@ -298,22 +298,22 @@ public class StockServiceImpl implements StockService {
                 dailyIndex.setMa5(BigDecimal
                         .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
                                 .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                if (count > 10) {
+                if (count >= 10) {
                     dailyIndex.setMa10(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count > 20) {
+                if (count >= 20) {
                     dailyIndex.setMa20(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count > 100) {
+                if (count >= 100) {
                     dailyIndex.setMa100(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count > 500) {
+                if (count >= 500) {
                     dailyIndex.setMa500(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
