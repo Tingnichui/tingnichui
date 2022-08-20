@@ -51,7 +51,8 @@ class TingnichuiApplicationTests {
 
     @Test
     void monitorTest() {
-        stockService.monitorStock();
+        stockService.updateDailyIndexAverage();
+//        stockService.monitorStock();
     }
 
     @Test

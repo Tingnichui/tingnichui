@@ -286,7 +286,7 @@ public class StockServiceImpl implements StockService {
         List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
         // 遍历计算5 10 20 100 500 均线
         for (DailyIndex dailyIndex : dailyIndexList) {
-            Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getId, dailyIndex.getId()));
+            Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
 
 
             if (count >= 5) {
