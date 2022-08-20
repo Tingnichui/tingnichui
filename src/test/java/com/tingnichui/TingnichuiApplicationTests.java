@@ -51,40 +51,42 @@ class TingnichuiApplicationTests {
 
     @Test
     void monitorTest() {
-        stockService.updateDailyIndexAverage();
-//        stockService.monitorStock();
+//        BigDecimal bigDecimal = dailyIndexMapper.sumCloserPrice("603680", 2);
+//        System.err.println(bigDecimal);
+//        stockService.updateDailyIndexAverage();
+        stockService.monitorStock();
     }
 
     @Test
     void TradeRule() {
 
         // 买点
-//        StockTradeStrategy buyStrategy = new StockTradeStrategy();
-//        buyStrategy.setStockCode("601288");
-//        buyStrategy.setStrategyType("buy");
-//        buyStrategy.setIsWork(true);
-//        buyStrategy.setMonitorType("closePrice");
-//        buyStrategy.setCompareMethod("lt");
-//        buyStrategy.setTargetType("preClosePrice");
-//        buyStrategy.setTargetCalculationType("percentage");
-//        buyStrategy.setTargetValue(new BigDecimal("-2"));
-//        buyStrategy.setTragetAmount(1);
-//        stockTradeStrategyMapper.insert(buyStrategy);
+        StockTradeStrategy buyStrategy = new StockTradeStrategy();
+        buyStrategy.setStockCode("601288");
+        buyStrategy.setStrategyType("buy");
+        buyStrategy.setIsWork(true);
+        buyStrategy.setMonitorType("closePrice");
+        buyStrategy.setCompareMethod("lt");
+        buyStrategy.setTargetType("ma5");
+        buyStrategy.setTargetCalculationType("percentage");
+        buyStrategy.setTargetValue(new BigDecimal("-1"));
+        buyStrategy.setTragetAmount(1);
+        stockTradeStrategyMapper.insert(buyStrategy);
 //        stockTradeStrategyMapper.update(buyStrategy,new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode,buyStrategy.getStockCode()));
 
         // 卖点
-        StockTradeStrategy sellStrategy = new StockTradeStrategy();
-        sellStrategy.setStockCode("601288");
-        sellStrategy.setStrategyType("sell");
-        sellStrategy.setIsWork(true);
-        sellStrategy.setMonitorType("closePrice");
-        sellStrategy.setCompareMethod("gt");
-        sellStrategy.setTargetType("buyPrice");
-        sellStrategy.setTargetCalculationType("percentage");
-        sellStrategy.setTargetValue(new BigDecimal("1"));
-        sellStrategy.setTragetAmount(1);
+//        StockTradeStrategy sellStrategy = new StockTradeStrategy();
+//        sellStrategy.setStockCode("601288");
+//        sellStrategy.setStrategyType("sell");
+//        sellStrategy.setIsWork(true);
+//        sellStrategy.setMonitorType("closePrice");
+//        sellStrategy.setCompareMethod("gt");
+//        sellStrategy.setTargetType("buyPrice");
+//        sellStrategy.setTargetCalculationType("percentage");
+//        sellStrategy.setTargetValue(new BigDecimal("1"));
+//        sellStrategy.setTragetAmount(1);
 //        stockTradeStrategyMapper.insert(sellStrategy);
-        stockTradeStrategyMapper.update(sellStrategy,new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode,sellStrategy.getStockCode()));
+//        stockTradeStrategyMapper.update(sellStrategy,new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode,sellStrategy.getStockCode()));
 
     }
 }

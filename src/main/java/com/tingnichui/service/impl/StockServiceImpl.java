@@ -470,15 +470,15 @@ public class StockServiceImpl implements StockService {
         } else if ("rurnoverRate".equals(monitorType)) {
             nowMonitorValue = dailyIndex.getRurnoverRate();
         } else if ("ma5".equals(monitorType)) {
-            nowMonitorValue = dailyIndex.getMa5();
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),4), dailyIndex.getClosePrice()),5);
         } else if ("ma10".equals(monitorType)) {
-            nowMonitorValue = dailyIndex.getMa10();
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),9), dailyIndex.getClosePrice()),10);
         } else if ("ma20".equals(monitorType)) {
-            nowMonitorValue = dailyIndex.getMa20();
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),19), dailyIndex.getClosePrice()),20);
         } else if ("ma100".equals(monitorType)) {
-            nowMonitorValue = dailyIndex.getMa100();
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),99), dailyIndex.getClosePrice()),100);
         } else if ("ma500".equals(monitorType)) {
-            nowMonitorValue = dailyIndex.getMa500();
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),499), dailyIndex.getClosePrice()),500);
         } else {
             DingdingUtil.sendMsg("交易策略未获取到当前值！");
             return Boolean.FALSE;
@@ -511,15 +511,15 @@ public class StockServiceImpl implements StockService {
             } else if ("rurnoverRate".equals(targetType)) {
                 targetValue = dailyIndex.getRurnoverRate();
             } else if ("ma5".equals(targetType)) {
-                targetValue = dailyIndex.getMa5();
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),4), dailyIndex.getClosePrice()),5);
             } else if ("ma10".equals(targetType)) {
-                targetValue = dailyIndex.getMa10();
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),9), dailyIndex.getClosePrice()),10);
             } else if ("ma20".equals(targetType)) {
-                targetValue = dailyIndex.getMa20();
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),19), dailyIndex.getClosePrice()),20);
             } else if ("ma100".equals(targetType)) {
-                targetValue = dailyIndex.getMa100();
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),99), dailyIndex.getClosePrice()),100);
             } else if ("ma500".equals(targetType)) {
-                targetValue = dailyIndex.getMa500();
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),499), dailyIndex.getClosePrice()),500);
             } else {
                 DingdingUtil.sendMsg("交易策略未获取到当前值！");
                 return Boolean.FALSE;
@@ -539,8 +539,6 @@ public class StockServiceImpl implements StockService {
             return Boolean.TRUE;
         } else if ("eq".equals(compareMethod) && nowMonitorValue.compareTo(targetValue) == 0) {
             return Boolean.TRUE;
-        } else {
-            DingdingUtil.sendMsg("交易策略没有设定比较方式！");
         }
 
         return Boolean.FALSE;

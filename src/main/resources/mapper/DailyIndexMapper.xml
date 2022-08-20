@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tingnichui.dao.DailyIndexMapper">
+
+    <select id="sumCloserPrice" resultType="decimal">
+        SELECT IFNULL(sum(close_price), 0)
+        FROM (SELECT close_price
+              FROM t_daily_index
+              WHERE stock_code = #{stockCode}
+              ORDER BY stock_date DESC LIMIT #{limit}) as temp
+    </select>
+
+
+</mapper>
