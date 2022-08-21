@@ -23,10 +23,4 @@ public interface StockService {
 
     Result updateStockInfo();
 
-    Result updateCurrentYear();
-
-    boolean isBusinessTime(Date date);
-
-    boolean isBusinessDate(Date date);
-
 }

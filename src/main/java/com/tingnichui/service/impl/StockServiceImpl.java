@@ -9,10 +9,12 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.datatype.jsr310.DecimalUtils;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.StockTradeRecordMapper;
 import com.tingnichui.dao.StockTradeStrategyMapper;
+import com.tingnichui.pojo.bo.EmStock;
 import com.tingnichui.pojo.po.DailyIndex;
 import com.tingnichui.pojo.po.StockInfo;
 import com.tingnichui.pojo.po.StockTradeRecord;
@@ -24,16 +26,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.commons.math3.ode.sampling.StepInterpolator;
+import org.apache.poi.hpsf.Decimal;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -62,33 +61,27 @@ public class StockServiceImpl implements StockService {
     @Resource
     private StockTradeRecordMapper stockTradeRecordMapper;
 
-    public static String getHttpGetResponseString(String url, String cookie) {
-        String body = "";
-        try {
-            DefaultHttpClient defaultHttpClient = new DefaultHttpClient();
-            HttpGet httpGet = new HttpGet(URI.create(url));
-            if (Objects.nonNull(cookie)) {
-                httpGet.setHeader("Cookie", cookie);
-            }
-            CloseableHttpResponse response = defaultHttpClient.execute(httpGet);
-            HttpEntity entity = response.getEntity();
-            if (entity != null) {
-                body = EntityUtils.toString(entity, "UTF-8");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return body;
-    }
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
 
     private String xueQiuUrl = "http://xueqiu.com/service/screener/screen?category=CN&exchange=sh_sz&areacode=&indcode=&order_by=symbol&order=desc&page=1&size=5000&only_count=0&current=&pct=&mc=&volume=&_=1637244021109";
     private String xueQiuCookie = "__utma=1.465353408.1597642113.1597642113.1597642113.1; device_id=0e9b5598ead36baaeaafc82e3d3ad790; s=by149wapcc; acw_tc=2760827016601384264196751e96b9bb03e403e947653a8379c4f3f7de6c4e; xq_a_token=bf75ab4bcea18c79de253cb841f2b27e248d8948; xq_r_token=c7d30dc738a77dd909a8228f3053679e86bf104b; xq_id_token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1aWQiOi0xLCJpc3MiOiJ1YyIsImV4cCI6MTY2MTgxNjI0MSwiY3RtIjoxNjYwMTM4NDA0NzkwLCJjaWQiOiJkOWQwbjRBWnVwIn0.adqS0ILb7mTZNReAmMIAVw5G6lgyLUpI-PWT9om3S1kujV7xLKjN6iIVB4ESeUVxFuTHwVQPBzuxpyLgR7dwhJ8kAW3vRm9jb9cOtTnipilI-l1MprMSPxLeTt3rKuOjgyyL4pXTRQtWjHhgny0PSHTOVJUEa9ggzZRImw_6I5oqLxF5jPv8CnXuLzovQPg73rOW1bp9PD9Z6OsbE6pXpPb6P06H94GBv_iO2rpQIneXkIlXEmATNbP0kj09i57sT0yP6W_QGwvDa0MAyYWJwu2vroF4ikFyXsk49txJdytU5CUe0cfh_FKddVOvkEGE7dWanE5ugpcaQ2txQYa0lQ; SL_G_WPT_TO=zh-CN; SL_GWPT_Show_Hide_tmp=1; SL_wptGlobTipTmp=1";
 
     @Override
     public Result updateStock4xueqiu() {
+
+        // 16点之前或者当天不是工作日不可以保存更新均线值
+        if (DateUtil.hour(new Date(), true) < 16 || !StockUtil.isStockTradeDate(new Date())) {
+            return ResultGenerator.genSuccessResult("东方财富-16点之后并且时工作日才允许保存日线记录！");
+        }
+
+
         try {
-            String body =
-                    getHttpGetResponseString(xueQiuUrl, xueQiuCookie);
+
+            String body = HttpUtil.get(xueQiuUrl, new HashMap<String, String>() {{
+                put("Cookie", xueQiuCookie);
+            }});
             JSONObject data = JSON.parseObject(body).getJSONObject("data");
             JSONArray list = data.getJSONArray("list");
             Date today = new Date();
@@ -171,7 +164,9 @@ public class StockServiceImpl implements StockService {
             String url = xueQiuDetailUrl.replace("{code}", code.toUpperCase())
                     .replace("{time}", String.valueOf(System.currentTimeMillis()))
                     .replace("{recentDayNumber}", String.valueOf(1));
-            String body = getHttpGetResponseString(url, xueQiuCookie);
+            String body = HttpUtil.get(url, new HashMap<String, String>() {{
+                put("Cookie", xueQiuCookie);
+            }});
             JSONObject data = JSON.parseObject(body).getJSONObject("data");
             JSONArray keyList = data.getJSONArray("column");
             JSONArray valueList = data.getJSONArray("item");
@@ -220,7 +215,9 @@ public class StockServiceImpl implements StockService {
     private Date checkDailyRecord() {
         String url = xueQiuUrl.replace("{code}", "SH600519")
                 .replace("{time}", String.valueOf(System.currentTimeMillis())).replace("{recentDayNumber}", "1");
-        String body = getHttpGetResponseString(url, xueQiuCookie);
+        String body = HttpUtil.get(url, new HashMap<String, String>() {{
+            put("Cookie", xueQiuCookie);
+        }});
         JSONObject data = JSON.parseObject(body).getJSONObject("data");
         JSONArray list = data.getJSONArray("item");
         if (CollectionUtils.isNotEmpty(list)) {
@@ -233,98 +230,128 @@ public class StockServiceImpl implements StockService {
         return new Date();
     }
 
-    /**
-     * 所有股票 key-code value-name
-     */
-    public static final HashMap<String, String> STOCK_MAP = new HashMap<>();
-    /**
-     * 需要监控关注的票 key-name value-Stock
-     */
-    public static final HashMap<String, StockInfo> TRACK_STOCK_MAP = new HashMap<>();
-
     @Override
     public Result saveDailyRecord4xueqiu() {
-//        if (DateUtil.hour(new Date(), true) >= 15) {
+
+        // 16点之前或者当天不是工作日不可以保存日线记录
+        if (DateUtil.hour(new Date(), true) < 16 || !StockUtil.isStockTradeDate(new Date())) {
+            return ResultGenerator.genSuccessResult("雪球-16点之后并且时工作日才允许保存日线记录！");
+        }
+
+        HashMap<String, StockInfo> trackStockMap = new HashMap<>();
+        HashMap<String, String> stockMap = new HashMap<>();
+
         List<StockInfo> stocks = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getStockCode, 221));
         stocks.forEach(e -> {
-            TRACK_STOCK_MAP.put(e.getStockName(), e);
-            STOCK_MAP.put(e.getStockExchange() + e.getStockCode(), e.getStockName());
+            trackStockMap.put(e.getStockName(), e);
+            stockMap.put(e.getStockExchange() + e.getStockCode(), e.getStockName());
         });
         // 15点后读取当日交易数据
-        this.toSaveDailyRecord(STOCK_MAP);
-        // 更新每只股票收盘价，当日成交量，MA5 MA10 MA20
-//            this.updateStock4xueqiu();
-//        } else {
-//            return ResultGenerator.genSuccessResult("还未收盘");
-        // 15点以前实时监控涨跌
-//            this.updateStock();
-//        }
+        this.toSaveDailyRecord(stockMap);
 
         return ResultGenerator.genSuccessResult("雪球-更新股票每日成交数据完成！");
     }
 
     @Override
     public Result saveDailyRecord4EastMoney() {
-        // 获取未退市的股票和指数
-        List<StockInfo> stockInfoList = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getStockType() == 0 || stockInfo.getStockType() == 1) && 2 != stockInfo.getStockState()).collect(Collectors.toList());
-        // 获取当天的日线
-        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
-        // 获取代码股票代码集合
-        List<String> codeList = dailyIndexList.stream().map(DailyIndex::getStockCode).collect(Collectors.toList());
-        // 剔除已经爬取到的股票
-        stockInfoList = stockInfoList.stream().filter(v -> !codeList.contains(v.getStockCode())).collect(Collectors.toList());
+
+        // 16点之前或者当天不是工作日不可以保存日线记录
+        if (DateUtil.hour(new Date(), true) < 16 || !StockUtil.isStockTradeDate(new Date())) {
+            return ResultGenerator.genSuccessResult("东方财富-16点之后并且时工作日才允许保存日线记录！");
+        }
+
+        boolean lock = false;
+        try {
+            lock = redisTemplate.opsForValue().setIfAbsent("saveDailyRecord4EastMoney", "1", 30, TimeUnit.MINUTES);
+            if (!lock) {
+                return ResultGenerator.genSuccessResult("请稍后再试");
+            }
+
+            // 获取未退市的股票和指数
+            List<StockInfo> stockInfoList = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getStockType() == 0 || stockInfo.getStockType() == 1) && 2 != stockInfo.getStockState()).collect(Collectors.toList());
+            // 获取当天的日线
+            List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
+            // 获取代码股票代码集合
+            List<String> codeList = dailyIndexList.stream().map(DailyIndex::getStockCode).collect(Collectors.toList());
+            // 剔除已经爬取到的股票
+            stockInfoList = stockInfoList.stream().filter(v -> !codeList.contains(v.getStockCode())).collect(Collectors.toList());
 
 
-        this.crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
-        this.crawDailyIndexFromEastMoney(stockInfoList);
+            this.crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
+            this.crawDailyIndexFromEastMoney(stockInfoList);
+        } finally {
+            if (lock) {
+                redisTemplate.delete("saveDailyRecord4EastMoney");
+            }
+        }
         return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
+
     }
 
     @Override
     public Result updateDailyIndexAverage() {
-        // 获取今日所有的日线信息
-        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
-        // 遍历计算5 10 20 100 500 均线
-        for (DailyIndex dailyIndex : dailyIndexList) {
-            Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
+        // 16点之前或者当天不是工作日不可以保存更新均线值
+        if (DateUtil.hour(new Date(), true) < 16 || !StockUtil.isStockTradeDate(new Date())) {
+            return ResultGenerator.genSuccessResult("东方财富-16点之前或者当天不是工作日不可以更新均线值！");
+        }
 
+        boolean lock = false;
+        try {
+            lock = redisTemplate.opsForValue().setIfAbsent("updateDailyIndexAverage", "1", 30, TimeUnit.MINUTES);
 
-            if (count >= 5) {
-                count = count > 500 ? 500 : count;
-                // 按日期倒序获得所有记录
-                List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
-                        new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()).orderByDesc(DailyIndex::getStockDate)).getRecords();
-
-                dailyIndex.setMa5(BigDecimal
-                        .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
-                                .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                if (count >= 10) {
-                    dailyIndex.setMa10(BigDecimal
-                            .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
-                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                }
-                if (count >= 20) {
-                    dailyIndex.setMa20(BigDecimal
-                            .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
-                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                }
-                if (count >= 100) {
-                    dailyIndex.setMa100(BigDecimal
-                            .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
-                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                }
-                if (count >= 500) {
-                    dailyIndex.setMa500(BigDecimal
-                            .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
-                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                }
-
-                dailyIndexMapper.updateById(dailyIndex);
+            if (!lock) {
+                return ResultGenerator.genSuccessResult("请稍后再试");
             }
 
+            // 获取今日所有的日线信息
+            List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
+            // 遍历计算5 10 20 100 500 均线
+            for (DailyIndex dailyIndex : dailyIndexList) {
+                Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
+
+
+                if (count >= 5) {
+                    count = count > 500 ? 500 : count;
+                    // 按日期倒序获得所有记录
+                    List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
+                            new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()).orderByDesc(DailyIndex::getStockDate)).getRecords();
+
+                    dailyIndex.setMa5(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
+                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                    if (count >= 10) {
+                        dailyIndex.setMa10(BigDecimal
+                                .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
+                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                    }
+                    if (count >= 20) {
+                        dailyIndex.setMa20(BigDecimal
+                                .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
+                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                    }
+                    if (count >= 100) {
+                        dailyIndex.setMa100(BigDecimal
+                                .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
+                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                    }
+                    if (count >= 500) {
+                        dailyIndex.setMa500(BigDecimal
+                                .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
+                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                    }
+
+                    dailyIndexMapper.updateById(dailyIndex);
+                }
+
+            }
+        } finally {
+            if (lock) {
+                redisTemplate.delete("updateDailyIndexAverage");
+            }
         }
 
         return ResultGenerator.genSuccessResult("更新股票ma5 ma10 ma20 ma100 ma500！");
+
     }
 
     private Map<String, BigDecimal> lastPriceMap = new HashMap<>();
@@ -357,7 +384,7 @@ public class StockServiceImpl implements StockService {
                 }
 
                 // 买点 符合买点要求就买入
-                if (this.getStrategyResult(null,dailyIndex, buyStrategy)) {
+                if (this.getStrategyResult(null, dailyIndex, buyStrategy)) {
                     // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
                     StockTradeRecord stockTradeRecord = new StockTradeRecord();
                     stockTradeRecord.setStockCode(stockCode);
@@ -380,7 +407,7 @@ public class StockServiceImpl implements StockService {
             }
 
             // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
-            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone,false));
+            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, false));
             int buySum = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
             if (!stockTradeRecordList.isEmpty()) {
                 // 获取卖点策略
@@ -393,7 +420,7 @@ public class StockServiceImpl implements StockService {
                             continue;
                         }
                         Integer sellAmount = sellStrategy.getTragetAmount();
-                        if (buySum >= sellAmount && this.getStrategyResult(buyRecord,dailyIndex,sellStrategy)) {
+                        if (buySum >= sellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
                             // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
                             // 更新买入记录
                             buyRecord.setIsDone(true);
@@ -428,7 +455,7 @@ public class StockServiceImpl implements StockService {
         return ResultGenerator.genSuccessResult("新浪-股价实时检测中！");
     }
 
-    private boolean getStrategyResult(StockTradeRecord stockTradeRecord,DailyIndex dailyIndex, StockTradeStrategy buyStrategy) {
+    private boolean getStrategyResult(StockTradeRecord stockTradeRecord, DailyIndex dailyIndex, StockTradeStrategy buyStrategy) {
 
         if (null == buyStrategy) {
             DingdingUtil.sendMsg("买入策略不存在");
@@ -440,7 +467,7 @@ public class StockServiceImpl implements StockService {
         }
 
 
-            // 获取操作点信息
+        // 获取操作点信息
         String compareMethod = buyStrategy.getCompareMethod();
         String targetCalculationType = buyStrategy.getTargetCalculationType();
         String targetType = buyStrategy.getTargetType();
@@ -470,15 +497,15 @@ public class StockServiceImpl implements StockService {
         } else if ("rurnoverRate".equals(monitorType)) {
             nowMonitorValue = dailyIndex.getRurnoverRate();
         } else if ("ma5".equals(monitorType)) {
-            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),4), dailyIndex.getClosePrice()),5);
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 4), dailyIndex.getClosePrice()), 5);
         } else if ("ma10".equals(monitorType)) {
-            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),9), dailyIndex.getClosePrice()),10);
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 9), dailyIndex.getClosePrice()), 10);
         } else if ("ma20".equals(monitorType)) {
-            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),19), dailyIndex.getClosePrice()),20);
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 19), dailyIndex.getClosePrice()), 20);
         } else if ("ma100".equals(monitorType)) {
-            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),99), dailyIndex.getClosePrice()),100);
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 99), dailyIndex.getClosePrice()), 100);
         } else if ("ma500".equals(monitorType)) {
-            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),499), dailyIndex.getClosePrice()),500);
+            nowMonitorValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 499), dailyIndex.getClosePrice()), 500);
         } else {
             DingdingUtil.sendMsg("交易策略未获取到当前值！");
             return Boolean.FALSE;
@@ -494,7 +521,7 @@ public class StockServiceImpl implements StockService {
                 } else {
                     targetValue = stockTradeRecord.getTradePrice();
                 }
-            }else if ("preClosePrice".equals(targetType)) {
+            } else if ("preClosePrice".equals(targetType)) {
                 targetValue = dailyIndex.getPreClosePrice();
             } else if ("openPrice".equals(targetType)) {
                 targetValue = dailyIndex.getOpenPrice();
@@ -511,15 +538,15 @@ public class StockServiceImpl implements StockService {
             } else if ("rurnoverRate".equals(targetType)) {
                 targetValue = dailyIndex.getRurnoverRate();
             } else if ("ma5".equals(targetType)) {
-                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),4), dailyIndex.getClosePrice()),5);
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 4), dailyIndex.getClosePrice()), 5);
             } else if ("ma10".equals(targetType)) {
-                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),9), dailyIndex.getClosePrice()),10);
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 9), dailyIndex.getClosePrice()), 10);
             } else if ("ma20".equals(targetType)) {
-                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),19), dailyIndex.getClosePrice()),20);
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 19), dailyIndex.getClosePrice()), 20);
             } else if ("ma100".equals(targetType)) {
-                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),99), dailyIndex.getClosePrice()),100);
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 99), dailyIndex.getClosePrice()), 100);
             } else if ("ma500".equals(targetType)) {
-                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(),499), dailyIndex.getClosePrice()),500);
+                targetValue = NumberUtil.div(NumberUtil.add(dailyIndexMapper.sumCloserPrice(dailyIndex.getStockCode(), 499), dailyIndex.getClosePrice()), 500);
             } else {
                 DingdingUtil.sendMsg("交易策略未获取到当前值！");
                 return Boolean.FALSE;
@@ -547,113 +574,60 @@ public class StockServiceImpl implements StockService {
 
     @Override
     public Result updateStockInfo() {
-        // 获取当前t_stock_info中的所有不是指数的股票
-        List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(v -> v.getStockType() != 1).collect(Collectors.toList());
-        // 股票名称：股票代码 为了检查爬取的股票信息是否已经存
-        Map<String, List<StockInfo>> checkStockInfoMap = list.stream().collect(Collectors.groupingBy(StockInfo::getStockCode));
 
-        ArrayList<StockInfo> needAddList = new ArrayList<>();
-        ArrayList<StockInfo> needUpdateList = new ArrayList<>();
-        // 爬取股票信息
-        List<StockInfo> crawlerList = this.getStockList("f12,f13,f14").stream().map(EmStock::getStockInfo).collect(Collectors.toList());
-        for (StockInfo stockInfo : crawlerList) {
-            StockConsts.StockLogType stocLogType = null;
-            // 检查是否存在 为空则需要添加，否则判断是否有变更，有的话需要更新
-            List<StockInfo> existStockINfoList = checkStockInfoMap.get(stockInfo.getStockCode());
-            if (existStockINfoList == null) {
-                stocLogType = StockConsts.StockLogType.New;
-            } else {
-                StockInfo existStockInfo = existStockINfoList.get(0);
-                if (!stockInfo.getStockName().equals(existStockInfo.getStockName()) && StockUtil.isOriName(stockInfo.getStockName())) {
-                    stocLogType = StockConsts.StockLogType.Rename;
-                    stockInfo.setId(existStockInfo.getId());
-                }
+        boolean lock = Boolean.FALSE;
+        try {
+            lock = redisTemplate.opsForValue().setIfAbsent("updateStockInfo", "1", 30, TimeUnit.MINUTES);
+            if (!lock) {
+                return ResultGenerator.genSuccessResult("请稍后再试");
             }
 
-            if (stocLogType != null) {
-                if (stocLogType == StockConsts.StockLogType.New) {
-                    needAddList.add(stockInfo);
+            // 获取当前t_stock_info中的所有不是指数的股票
+            List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(v -> v.getStockType() != 1).collect(Collectors.toList());
+            // 股票名称：股票代码 为了检查爬取的股票信息是否已经存
+            Map<String, List<StockInfo>> checkStockInfoMap = list.stream().collect(Collectors.groupingBy(StockInfo::getStockCode));
+
+            ArrayList<StockInfo> needAddList = new ArrayList<>();
+            ArrayList<StockInfo> needUpdateList = new ArrayList<>();
+            // 爬取股票信息
+            List<StockInfo> crawlerList = this.getStockList("f12,f13,f14").stream().map(EmStock::getStockInfo).collect(Collectors.toList());
+            for (StockInfo stockInfo : crawlerList) {
+                StockConsts.StockLogType stocLogType = null;
+                // 检查是否存在 为空则需要添加，否则判断是否有变更，有的话需要更新
+                List<StockInfo> existStockINfoList = checkStockInfoMap.get(stockInfo.getStockCode());
+                if (existStockINfoList == null) {
+                    stocLogType = StockConsts.StockLogType.New;
                 } else {
-                    needUpdateList.add(stockInfo);
+                    StockInfo existStockInfo = existStockINfoList.get(0);
+                    if (!stockInfo.getStockName().equals(existStockInfo.getStockName()) && StockUtil.isOriName(stockInfo.getStockName())) {
+                        stocLogType = StockConsts.StockLogType.Rename;
+                        stockInfo.setId(existStockInfo.getId());
+                    }
+                }
+
+                if (stocLogType != null) {
+                    if (stocLogType == StockConsts.StockLogType.New) {
+                        needAddList.add(stockInfo);
+                    } else {
+                        needUpdateList.add(stockInfo);
+                    }
                 }
             }
-        }
 
-        for (StockInfo stockInfo : needAddList) {
-            stockInfoMapper.insert(stockInfo);
-        }
+            for (StockInfo stockInfo : needAddList) {
+                stockInfoMapper.insert(stockInfo);
+            }
 
-        for (StockInfo stockInfo : needUpdateList) {
-            stockInfoMapper.updateById(stockInfo);
+            for (StockInfo stockInfo : needUpdateList) {
+                stockInfoMapper.updateById(stockInfo);
+            }
+        } finally {
+            if (lock) {
+                redisTemplate.delete("updateStockInfo");
+            }
         }
 
         return ResultGenerator.genSuccessResult("更新股票信息完成！");
-    }
-
-    @Override
-    public Result updateCurrentYear() {
-        int year = Calendar.getInstance().get(Calendar.YEAR);
-//        Map<?, ?> data = restTemplate.getForObject("http://tool.bitefu.net/jiari/?d=" + year, Map.class);
-        String content = HttpUtil.get("http://tool.bitefu.net/jiari/?d=" + year);
-        if (StringUtils.isBlank(content)) {
-            return ResultGenerator.genSuccessResult("更新每年工作日异常！");
-        }
-
-        JSONObject jsonObject = JSON.parseObject(content);
-
-        @SuppressWarnings("unchecked")
-        Map<String, Integer> dateInfo = (Map<String, Integer>) jsonObject.get(String.valueOf(year));
-        List<String> list = dateInfo.entrySet().stream().filter(entry -> entry.getValue() != 0).map(entry -> {
-            Date date;
-            try {
-                date = DateUtils.parseDate(year + entry.getKey(), "yyyyMMdd");
-            } catch (ParseException e) {
-                throw new IllegalArgumentException(e);
-            }
-            return DateUtil.format(date, "yyyyMMdd");
-        }).collect(Collectors.toList());
-
-        return ResultGenerator.genSuccessResult(list);
-    }
-
-    @Override
-    public boolean isBusinessDate(Date date) {
-
-        if (date == null) {
-            date = new Date();
-        }
-
-        Calendar c = Calendar.getInstance();
-        c.setTime(date);
-        int day = c.get(Calendar.DAY_OF_WEEK);
-        if (day == Calendar.SATURDAY || day == Calendar.SUNDAY) {
-            return false;
-        }
-        List<String> dateList = (List<String>) updateCurrentYear().getData();
-
-        return !dateList.contains(DateUtil.format(date, "yyyyMMdd"));
-    }
-
-    @Override
-    public boolean isBusinessTime(Date date) {
-        if (date == null) {
-            date = new Date();
-        }
-
-        boolean isBusinessDate = isBusinessDate(date);
-        if (!isBusinessDate) {
-            return false;
-        }
-
-        Calendar c = Calendar.getInstance();
-        c.setTime(date);
-        int hour = c.get(Calendar.HOUR_OF_DAY);
-        if (hour < 9 || hour == 12 || hour > 14) {
-            return false;
-        }
-
-        int minute = c.get(Calendar.MINUTE);
-        return !(hour == 9 && minute < 30 || hour == 11 && minute > 30);
     }
 
     private List<StockInfo> getStockList() {
@@ -703,7 +677,6 @@ public class StockServiceImpl implements StockService {
      * @param content var hq_str_sh601288="农业银行,2.840,2.850,2.830,2.850,2.810,2.830,2.840,270504182,765825256.000,20503200,2.830,28078500,2.820,32757300,2.810,20226900,2.800,4955800,2.790,9961400,2.840,21828600,2.850,26505900,2.860,18669000,2.870,28754100,2.880,2022-08-12,15:00:00,00,";
      * @return
      */
-    //
     private List<DailyIndex> parseDailyIndexList4xinlang(String content) {
         String[] dailyIndexListStr = content.split("\n");
         ArrayList<DailyIndex> DailyList = new ArrayList<>();
@@ -742,42 +715,6 @@ public class StockServiceImpl implements StockService {
         return DailyList;
     }
 
-
-    private DailyIndex parseDailyIndex(String content) {
-        String[] strs = content.split(",");
-        if (strs.length <= 1) {
-            return null;
-        }
-        String code = strs[0].substring(strs[0].lastIndexOf('_') + 3, strs[0].lastIndexOf('='));
-        BigDecimal openingPrice = new BigDecimal(strs[1]);
-        BigDecimal preClosingPrice = new BigDecimal(strs[2]);
-        BigDecimal closingPrice = new BigDecimal(strs[3]);
-        BigDecimal highestPrice = new BigDecimal(strs[4]);
-        BigDecimal lowestPrice = new BigDecimal(strs[5]);
-        BigDecimal tradingVolume = new BigDecimal(strs[8]);
-        BigDecimal tradingValue = new BigDecimal(strs[9]);
-        Date date;
-        try {
-            date = DateUtils.parseDate(strs[30], "yyyy-MM-dd");
-        } catch (ParseException e) {
-            throw new IllegalArgumentException(e);
-        }
-        DailyIndex dailyIndex = new DailyIndex();
-        dailyIndex.setStockCode(code);
-        dailyIndex.setOpenPrice(openingPrice);
-        dailyIndex.setPreClosePrice(preClosingPrice);
-        dailyIndex.setClosePrice(closingPrice);
-        dailyIndex.setHighestPrice(highestPrice);
-        dailyIndex.setLowestPrice(lowestPrice);
-        dailyIndex.setTradeVolume(tradingVolume);
-        dailyIndex.setTradeAmount(tradingValue);
-        dailyIndex.setRurnoverRate(BigDecimal.ZERO);
-        dailyIndex.setStockDate(new java.sql.Date(date.getTime()));
-
-        return dailyIndex;
-    }
-
-
     private void crawDailyIndexFromEastMoney(List<StockInfo> stockInfoList) {
         // 获取日线信息
         List<DailyIndex> dailyIndexList = this.getStockList("f2,f5,f6,f8,f12,f13,f14,f15,f16,f17,f18").stream().map(EmStock::getDailyIndex).collect(Collectors.toList());
@@ -795,6 +732,7 @@ public class StockServiceImpl implements StockService {
             dailyIndexMapper.insert(dailyIndex);
         }
     }
+
 
     private List<EmStock> getStockList(String fields) {
         String content = HttpUtil.get("http://20.push2.eastmoney.com/api/qt/clist/get?pn=1&pz=10000000&np=1&fid=f3&fields=" + fields + "&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:0+t:81+s:2048,m:1+t:2,m:1+t:23,b:MK0021,b:MK0022,b:MK0023,b:MK0024");
@@ -864,29 +802,6 @@ public class StockServiceImpl implements StockService {
 
             return emStock;
         }).collect(Collectors.toList());
-    }
-
-    public static class EmStock {
-
-        private StockInfo stockInfo;
-        private DailyIndex dailyIndex;
-
-        public StockInfo getStockInfo() {
-            return stockInfo;
-        }
-
-        public void setStockInfo(StockInfo stockInfo) {
-            this.stockInfo = stockInfo;
-        }
-
-        public DailyIndex getDailyIndex() {
-            return dailyIndex;
-        }
-
-        public void setDailyIndex(DailyIndex dailyIndex) {
-            this.dailyIndex = dailyIndex;
-        }
-
     }
 
 }

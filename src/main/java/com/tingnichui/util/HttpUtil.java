@@ -251,7 +251,7 @@ public class HttpUtil {
 //        return respStr;
 //    }
 
-    public static String get(String url, Map<String, String> headers) throws Exception {
+    public static String get(String url, Map<String, String> headers) {
 
         CloseableHttpClient httpClient = getHttpClient();
         HttpGet get = new HttpGet(url);
@@ -260,17 +260,22 @@ public class HttpUtil {
             get.setHeader(key, headers.get(key));
         }
 
-        CloseableHttpResponse response = httpClient.execute(get);
         String respStr = null;
-        HttpEntity entity = response.getEntity();
+        try {
+            CloseableHttpResponse response = httpClient.execute(get);
+            respStr = null;
+            HttpEntity entity = response.getEntity();
 
-        if (entity != null) {
-            respStr = EntityUtils.toString(entity, "UTF-8");
+            if (entity != null) {
+                respStr = EntityUtils.toString(entity, "UTF-8");
+            }
+
+            //释放连接
+            EntityUtils.consume(response.getEntity());
+            response.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        //释放连接
-        EntityUtils.consume(response.getEntity());
-        response.close();
 
         return respStr;
     }

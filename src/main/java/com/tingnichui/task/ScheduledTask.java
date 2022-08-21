@@ -4,6 +4,7 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.DingdingUtil;
+import com.tingnichui.util.StockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,7 +32,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 9 ? * MON-FRI")
     public void updateStockInfoTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
         log.info("开始更新股票信息" + isBusinessDate);
         if (!isBusinessDate) {
             log.info("非工作日-结束更新股票信息");
@@ -53,7 +54,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 17,18,19 ? * MON-FRI")
     public void saveDailyIndexTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
         log.info("开始保存日线数据" + isBusinessDate);
         if (!isBusinessDate) {
             return;
@@ -73,7 +74,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 20,21,22 ? * MON-FRI")
     public void updateDailyIndexAverageTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = stockService.isBusinessDate(new Date());
+        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
         log.info("开始更新股票均线" + isBusinessDate);
         if (!isBusinessDate) {
             return;
@@ -94,7 +95,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0/10 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessTime = stockService.isBusinessTime(new Date());
+        boolean isBusinessTime = StockUtil.isStockTradeTime(new Date());
         log.info("开始实时监控监控" + isBusinessTime);
         if (!isBusinessTime) {
             return;

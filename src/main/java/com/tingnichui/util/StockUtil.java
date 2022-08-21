@@ -1,18 +1,22 @@
 package com.tingnichui.util;
 
-import net.sourceforge.pinyin4j.PinyinHelper;
-import net.sourceforge.pinyin4j.format.HanyuPinyinOutputFormat;
-import net.sourceforge.pinyin4j.format.HanyuPinyinToneType;
-import net.sourceforge.pinyin4j.format.HanyuPinyinVCharType;
-import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombination;
+import cn.hutool.core.date.DateUtil;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
+import org.apache.commons.lang3.time.DateUtils;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.util.StringUtils;
 
+import javax.annotation.Resource;
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.text.ParseException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class StockUtil {
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
 
     private static final List<String> CODES_SH_A = Arrays.asList("600", "601", "603", "605", "688", "689");
     private static final List<String> CODES_SH_INDEX = Arrays.asList("000001");
@@ -28,6 +32,70 @@ public class StockUtil {
 
     private StockUtil() {
     }
+
+    public static boolean isStockTradeTime(Date date) {
+        if (date == null) {
+            date = new Date();
+        }
+
+        boolean isBusinessDate = isStockTradeDate(date);
+        if (!isBusinessDate) {
+            return false;
+        }
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        int hour = c.get(Calendar.HOUR_OF_DAY);
+        if (hour < 9 || hour == 12 || hour > 14) {
+            return false;
+        }
+
+        int minute = c.get(Calendar.MINUTE);
+        return !(hour == 9 && minute < 30 || hour == 11 && minute > 30);
+    }
+
+    public static boolean isStockTradeDate(Date date) {
+
+        if (date == null) {
+            date = new Date();
+        }
+
+        Calendar c = Calendar.getInstance();
+        c.setTime(date);
+        int day = c.get(Calendar.DAY_OF_WEEK);
+        if (day == Calendar.SATURDAY || day == Calendar.SUNDAY) {
+            return false;
+        }
+        List<String> dateList = StockUtil.getHolidayList();
+
+        return !dateList.contains(DateUtil.format(date, "yyyyMMdd"));
+    }
+
+
+    public static List<String> getHolidayList() {
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+        String content = HttpUtil.get("http://tool.bitefu.net/jiari/?d=" + year);
+        if (org.apache.commons.lang3.StringUtils.isBlank(content)) {
+            return Collections.emptyList();
+        }
+
+        JSONObject jsonObject = JSON.parseObject(content);
+
+        @SuppressWarnings("unchecked")
+        Map<String, Integer> dateInfo = (Map<String, Integer>) jsonObject.get(String.valueOf(year));
+        List<String> list = dateInfo.entrySet().stream().filter(entry -> entry.getValue() != 0).map(entry -> {
+            Date date;
+            try {
+                date = DateUtils.parseDate(year + entry.getKey(), "yyyyMMdd");
+            } catch (ParseException e) {
+                throw new IllegalArgumentException(e);
+            }
+            return DateUtil.format(date, "yyyyMMdd");
+        }).collect(Collectors.toList());
+
+        return list;
+    }
+
 
     public static String getExchange(String code) {
         if (!StringUtils.hasLength(code)) {
@@ -83,33 +151,6 @@ public class StockUtil {
         throw new NoSuchElementException("no stock type exchange " + exchange + ", code " + code);
     }
 
-    public static String getPinyin(String name) {
-        HanyuPinyinOutputFormat defaultFormat = new HanyuPinyinOutputFormat();
-        defaultFormat.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
-        defaultFormat.setVCharType(HanyuPinyinVCharType.WITH_V);
-        StringBuilder sb = new StringBuilder();
-        for (char ch : name.toLowerCase().toCharArray()) {
-            if (ch == '*') {
-                continue;
-            }
-            if (ch > 31 && ch < 127) {
-                sb.append(ch);
-            } else if (ch == '行') {
-                sb.append('h');
-            } else {
-                try {
-                    String[] arr = PinyinHelper.toHanyuPinyinStringArray(ch, defaultFormat);
-                    if (arr == null) {
-                        throw new RuntimeException("not support character " + name);
-                    }
-                    sb.append(arr[0].charAt(0));
-                } catch (BadHanyuPinyinOutputFormatCombination e) {
-                    throw new RuntimeException("get pinyin error", e);
-                }
-            }
-        }
-        return sb.toString();
-    }
 
     public static BigDecimal calcIncreaseRate(BigDecimal a, BigDecimal b) {
         return DecimalUtil.div(DecimalUtil.sub(a, b), b);

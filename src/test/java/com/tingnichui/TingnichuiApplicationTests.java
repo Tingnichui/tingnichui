@@ -1,7 +1,6 @@
 package com.tingnichui;
 
-import com.alibaba.fastjson.JSON;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import cn.hutool.core.date.DateUtil;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.StockTradeStrategyMapper;
@@ -14,11 +13,13 @@ import com.tingnichui.util.BaiduUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.Resource;
+import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @SpringBootTest
@@ -49,12 +50,20 @@ class TingnichuiApplicationTests {
     @Resource
     private ScheduledTask scheduledTask;
 
+
+    @Resource
+    private RedisTemplate<String, String> redisTemplate;
+
     @Test
     void monitorTest() {
-//        BigDecimal bigDecimal = dailyIndexMapper.sumCloserPrice("603680", 2);
+        System.err.println(BigDecimal.ZERO.compareTo(null));
+//        stockService.saveDailyRecord4EastMoney();
+////        BigDecimal bigDecimal = dailyIndexMapper.sumCloserPrice("603680", 2);
 //        System.err.println(bigDecimal);
 //        stockService.updateDailyIndexAverage();
-        stockService.monitorStock();
+//        stockService.monitorStock();
+
+
     }
 
     @Test
