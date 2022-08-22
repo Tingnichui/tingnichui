@@ -65,6 +65,8 @@ public class WechatUtil {
         return "redirect:" + getOpenIdUrl;
     }
 
+    // TODO GengHui 2022/8/22 生成连接--->用户点击授权--->微信回调接口返回code值--->获取code值发送请求获取openid
+
     /**
      * 获取用户openId
      *

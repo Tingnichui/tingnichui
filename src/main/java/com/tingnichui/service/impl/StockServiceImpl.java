@@ -393,7 +393,7 @@ public class StockServiceImpl implements StockService {
                     stockTradeRecord.setTradePrice(dailyIndex.getClosePrice());
                     stockTradeRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
                     stockTradeRecord.setTradeAmount(buyStrategy.getTragetAmount());
-                    stockTradeRecord.setIsDone(false);
+                    stockTradeRecord.setIsDone(true);
                     int insert = stockTradeRecordMapper.insert(stockTradeRecord);
                     if (insert > 0) {
                         String body = String.format("买入%s:当前价格:%.02f, 涨幅%.02f%%",
@@ -407,7 +407,7 @@ public class StockServiceImpl implements StockService {
             }
 
             // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
-            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, false));
+            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, true));
             int buySum = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
             if (!stockTradeRecordList.isEmpty()) {
                 // 获取卖点策略
@@ -423,8 +423,8 @@ public class StockServiceImpl implements StockService {
                         if (buySum >= sellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
                             // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
                             // 更新买入记录
-                            buyRecord.setIsDone(true);
-                            stockTradeRecordMapper.updateById(buyRecord);
+//                            buyRecord.setIsDone(true);
+//                            stockTradeRecordMapper.updateById(buyRecord);
                             // 插入卖出记录
                             StockTradeRecord sellRecord = new StockTradeRecord();
                             sellRecord.setStockCode(stockCode);
