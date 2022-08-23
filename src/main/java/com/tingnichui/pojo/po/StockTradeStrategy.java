@@ -25,6 +25,11 @@ public class StockTradeStrategy {
     private Long id;
 
     /**
+     * 策略标题
+     */
+    private String title;
+
+    /**
      * 股票代码
      */
     private String stockCode;

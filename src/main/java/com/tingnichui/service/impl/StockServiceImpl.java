@@ -396,7 +396,8 @@ public class StockServiceImpl implements StockService {
                     stockTradeRecord.setIsDone(true);
                     int insert = stockTradeRecordMapper.insert(stockTradeRecord);
                     if (insert > 0) {
-                        String body = String.format("买入%s:当前价格:%.02f, 涨幅%.02f%%",
+                        String body = String.format("%s|买入%s:当前价格:%.02f, 涨幅%.02f%%",
+                                buyStrategy.getTitle(),
                                 stockInfo.getStockName(),
                                 dailyIndex.getClosePrice().doubleValue(),
                                 StockUtil.calcIncreaseRate(dailyIndex.getClosePrice(), dailyIndex.getPreClosePrice()).movePointRight(2).doubleValue());
@@ -409,11 +410,11 @@ public class StockServiceImpl implements StockService {
             // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
             List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, true));
             if (!stockTradeRecordList.isEmpty()) {
-                
+
                 // 统计建仓数量
                 int buyCount = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
                 int sellCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "sell").eq(StockTradeRecord::getIsDone, true));
-                int actualNum = buyCount - sellCount;
+                int actualCount = buyCount - sellCount;
 
                 // 获取卖点策略
                 List<StockTradeStrategy> sellStrategyList = stockTradeStrategyMapper.selectList(new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode, stockCode).eq(StockTradeStrategy::getStrategyType, "sell"));
@@ -424,12 +425,9 @@ public class StockServiceImpl implements StockService {
                         if (todayTradeCount > 0) {
                             continue;
                         }
-                        Integer sellAmount = sellStrategy.getTragetAmount();
-                        if (buyCount >= sellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
+                        Integer strategSellAmount = sellStrategy.getTragetAmount();
+                        if (actualCount >= strategSellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
                             // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
-                            // 更新买入记录
-//                            buyRecord.setIsDone(true);
-//                            stockTradeRecordMapper.updateById(buyRecord);
                             // 插入卖出记录
                             StockTradeRecord sellRecord = new StockTradeRecord();
                             sellRecord.setStockCode(stockCode);
@@ -437,12 +435,13 @@ public class StockServiceImpl implements StockService {
                             sellRecord.setTradeType("sell");
                             sellRecord.setTradePrice(dailyIndex.getClosePrice());
                             sellRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
-                            sellRecord.setTradeAmount(sellAmount);
+                            sellRecord.setTradeAmount(strategSellAmount);
                             sellRecord.setIsDone(false);
                             int insert = stockTradeRecordMapper.insert(sellRecord);
                             if (insert > 0) {
-                                actualNum -= sellAmount;
-                                String body = String.format("卖出%s:买入价格:%.02f, 卖出价格:%.02f",
+                                actualCount -= strategSellAmount;
+                                String body = String.format("%s|卖出%s:买入价格:%.02f, 卖出价格:%.02f",
+                                        sellStrategy.getTitle(),
                                         stockInfo.getStockName(),
                                         buyRecord.getTradePrice(),
                                         sellRecord.getTradePrice());
