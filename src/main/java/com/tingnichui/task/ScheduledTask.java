@@ -92,7 +92,7 @@ public class ScheduledTask {
      * 实时监控监控
      */
 //    @Scheduled(cron = "0,15,30,45 * 9,10,11,13,14 ? * MON-FRI")
-    @Scheduled(cron = "0 0/10 9,10,11,13,14 ? * MON-FRI")
+    @Scheduled(cron = "0 0/1 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
         MDC.put("processId", IdUtil.simpleUUID());
         boolean isBusinessTime = StockUtil.isStockTradeTime(new Date());

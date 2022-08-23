@@ -408,8 +408,13 @@ public class StockServiceImpl implements StockService {
 
             // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
             List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, true));
-            int buySum = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
             if (!stockTradeRecordList.isEmpty()) {
+                
+                // 统计建仓数量
+                int buyCount = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
+                int sellCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "sell").eq(StockTradeRecord::getIsDone, true));
+                int actualNum = buyCount - sellCount;
+
                 // 获取卖点策略
                 List<StockTradeStrategy> sellStrategyList = stockTradeStrategyMapper.selectList(new LambdaQueryWrapper<StockTradeStrategy>().eq(StockTradeStrategy::getStockCode, stockCode).eq(StockTradeStrategy::getStrategyType, "sell"));
                 for (StockTradeRecord buyRecord : stockTradeRecordList) {
@@ -420,7 +425,7 @@ public class StockServiceImpl implements StockService {
                             continue;
                         }
                         Integer sellAmount = sellStrategy.getTragetAmount();
-                        if (buySum >= sellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
+                        if (buyCount >= sellAmount && this.getStrategyResult(buyRecord, dailyIndex, sellStrategy)) {
                             // TODO GengHui 2022/8/20 此处应该去下单,交易成功后在插入交易列表，这里直接插入交易表 模拟交易
                             // 更新买入记录
 //                            buyRecord.setIsDone(true);
@@ -436,7 +441,7 @@ public class StockServiceImpl implements StockService {
                             sellRecord.setIsDone(false);
                             int insert = stockTradeRecordMapper.insert(sellRecord);
                             if (insert > 0) {
-                                buySum -= sellAmount;
+                                actualNum -= sellAmount;
                                 String body = String.format("卖出%s:买入价格:%.02f, 卖出价格:%.02f",
                                         stockInfo.getStockName(),
                                         buyRecord.getTradePrice(),
