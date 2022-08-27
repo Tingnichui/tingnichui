@@ -9,20 +9,35 @@ public  class CacheConsts {
     /**
      * 从东方财富保存股票日线信息
      */
-    public static final String SAVE_DAILY_RECORD_4_EASTMONEY = "SAVE_DAILY_RECORD_4_EASTMONEY";
+    public static final String SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK = "SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK";
 
     /**
      * 更新股票ma5 ma10 ma20 ma100 ma500
      */
-    public static final String UPDATE_DAILY_INDEX_AVERAGE = "UPDATE_DAILY_INDEX_AVERAGE";
+    public static final String UPDATE_DAILY_INDEX_AVERAGE_LOCK = "UPDATE_DAILY_INDEX_AVERAGE_LOCK";
 
     /**
      * 更新股票信息
      */
-    public static final String UPDATE_STOCK_INFO = "UPDATE_STOCK_INFO";
+    public static final String UPDATE_STOCK_INFO_LOCK = "UPDATE_STOCK_INFO_LOCK";
 
-    public static final String UPDATE_STOCK_INFO_TASK = "UPDATE_STOCK_INFO_TASK";
-    public static final String SAVE_DAILY_RECORD_TASK = "SAVE_DAILY_RECORD_TASK";
-    public static final String UPDATE_DAILY_INDEX_AVERAGE_TASK = "UPDATE_DAILY_INDEX_AVERAGE_TASK";
-    public static final String MONITOR_STOCK_TASK = "MONITOR_STOCK_TASK";
+    /**
+     * 更新股票信息定时任务
+     */
+    public static final String UPDATE_STOCK_INFO_TASK_LOCK = "UPDATE_STOCK_INFO_TASK_LOCK";
+
+    /**
+     * 保存股票日线信息任务
+     */
+    public static final String SAVE_DAILY_RECORD_TASK_LOCK = "SAVE_DAILY_RECORD_TASK_LOCK";
+
+    /**
+     * 更新股票均线
+     */
+    public static final String UPDATE_DAILY_INDEX_AVERAGE_TASK_LOCK = "UPDATE_DAILY_INDEX_AVERAGE_TASK_LOCK";
+
+    /**
+     * 实时监控股票交易
+     */
+    public static final String MONITOR_STOCK_TASK_LOCk = "MONITOR_STOCK_TASK_LOCk";
 }

@@ -253,7 +253,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_4_EASTMONEY, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK, "1", 30, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -272,7 +272,7 @@ public class StockServiceImpl implements StockService {
             this.crawDailyIndexFromEastMoney(stockInfoList);
         } finally {
             if (lock) {
-                redisUtil.deleteObject(CacheConsts.SAVE_DAILY_RECORD_4_EASTMONEY);
+                redisUtil.deleteObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK);
             }
         }
         return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
@@ -289,7 +289,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK, "1", 30, TimeUnit.MINUTES);
 
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
@@ -338,7 +338,7 @@ public class StockServiceImpl implements StockService {
             }
         } finally {
             if (lock) {
-                redisUtil.deleteObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE);
+                redisUtil.deleteObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK);
             }
         }
 
@@ -572,7 +572,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = Boolean.FALSE;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO_LOCK, "1", 30, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -618,7 +618,7 @@ public class StockServiceImpl implements StockService {
             }
         } finally {
             if (lock) {
-                redisUtil.deleteObject(CacheConsts.UPDATE_STOCK_INFO);
+                redisUtil.deleteObject(CacheConsts.UPDATE_STOCK_INFO_LOCK);
             }
         }
 
