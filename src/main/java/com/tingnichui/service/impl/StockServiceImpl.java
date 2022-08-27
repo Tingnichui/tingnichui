@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tingnichui.common.CacheConsts;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.StockTradeRecordMapper;
@@ -26,7 +27,6 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -145,7 +145,8 @@ public class StockServiceImpl implements StockService {
         }
     }
 
-    private String xueQiuDetailUrl = "http://stock.xueqiu.com/v5/stock/chart/kline.json?symbol={code}&begin={time}&period=day&type=before&count=-{recentDayNumber}&indicator=kline,pe,pb,ps,pcf,market_capital,agt,ggt,balance";
+    @Value("${xue_qiu_detail_url}")
+    private String xueQiuDetailUrl;
 
     public Result doSaveDailyRecord(String code, String name) {
         try {
@@ -227,7 +228,7 @@ public class StockServiceImpl implements StockService {
             return ResultGenerator.genSuccessResult("雪球-16点之后并且时工作日才允许保存日线记录！");
         }
 
-        HashMap<String, StockInfo> trackStockMap = new HashMap<>();
+        HashMap<String, StockInfo> trackStockMap = new HashMap<>(16);
         HashMap<String, String> stockMap = new HashMap<>();
 
         List<StockInfo> stocks = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().le(StockInfo::getStockCode, 221));
@@ -249,9 +250,10 @@ public class StockServiceImpl implements StockService {
             return ResultGenerator.genSuccessResult("东方财富-16点之后并且时工作日才允许保存日线记录！");
         }
 
+
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject("saveDailyRecord4EastMoney", "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_4_EASTMONEY, "1", 30, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -270,7 +272,7 @@ public class StockServiceImpl implements StockService {
             this.crawDailyIndexFromEastMoney(stockInfoList);
         } finally {
             if (lock) {
-                redisUtil.deleteObject("saveDailyRecord4EastMoney");
+                redisUtil.deleteObject(CacheConsts.SAVE_DAILY_RECORD_4_EASTMONEY);
             }
         }
         return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
@@ -284,9 +286,10 @@ public class StockServiceImpl implements StockService {
             return ResultGenerator.genSuccessResult("东方财富-16点之前或者当天不是工作日不可以更新均线值！");
         }
 
+
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject("updateDailyIndexAverage", "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE, "1", 30, TimeUnit.MINUTES);
 
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
@@ -335,7 +338,7 @@ public class StockServiceImpl implements StockService {
             }
         } finally {
             if (lock) {
-                redisUtil.deleteObject("updateDailyIndexAverage");
+                redisUtil.deleteObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE);
             }
         }
 
@@ -343,7 +346,6 @@ public class StockServiceImpl implements StockService {
 
     }
 
-    private Map<String, BigDecimal> lastPriceMap = new HashMap<>();
 
     @Override
     public Result monitorStock() {
@@ -472,7 +474,7 @@ public class StockServiceImpl implements StockService {
         }
 
         // 根据监测类型获取当前监测值
-        BigDecimal nowMonitorValue = null;
+        BigDecimal nowMonitorValue;
         if ("preClosePrice".equals(monitorType)) {
             nowMonitorValue = dailyIndex.getPreClosePrice();
         } else if ("openPrice".equals(monitorType)) {
@@ -570,7 +572,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = Boolean.FALSE;
         try {
-            lock = redisUtil.setCacheObject("updateStockInfo", "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO, "1", 30, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -616,7 +618,7 @@ public class StockServiceImpl implements StockService {
             }
         } finally {
             if (lock) {
-                redisUtil.deleteObject("updateStockInfo");
+                redisUtil.deleteObject(CacheConsts.UPDATE_STOCK_INFO);
             }
         }
 
