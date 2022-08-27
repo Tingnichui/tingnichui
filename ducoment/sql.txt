@@ -1,0 +1,69 @@
+CREATE TABLE `t_daily_index` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `stock_code` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8_bin NOT NULL COMMENT '股票代码',
+  `stock_date` date NOT NULL COMMENT '股票日期',
+  `open_price` decimal(20,2) NOT NULL COMMENT '今日开盘价',
+  `highest_price` decimal(20,2) NOT NULL COMMENT '最高价',
+  `lowest_price` decimal(20,2) NOT NULL COMMENT '最低价',
+  `close_price` decimal(20,2) NOT NULL COMMENT '收盘价',
+  `pre_close_price` decimal(20,2) DEFAULT NULL COMMENT '昨日收盘价',
+  `trade_volume` bigint DEFAULT NULL COMMENT '交易量',
+  `trade_amount` decimal(20,2) DEFAULT NULL COMMENT '交易总金额',
+  `rurnover_rate` decimal(11,2) DEFAULT NULL COMMENT '换手率',
+  `ma5` decimal(11,2) DEFAULT NULL COMMENT '5日均线值',
+  `ma10` decimal(11,2) DEFAULT NULL COMMENT '10日均线值',
+  `ma20` decimal(11,2) DEFAULT NULL COMMENT '20日均线值',
+  `ma100` decimal(11,2) DEFAULT NULL COMMENT '100日均线值',
+  `ma500` decimal(11,2) DEFAULT NULL COMMENT '500日均线值',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code_date` (`stock_code`,`stock_date`) USING BTREE COMMENT 'stock_code+stock_date',
+  KEY `idk_code` (`stock_code`) USING BTREE COMMENT 'stock_code'
+)
+
+CREATE TABLE `t_stock_info` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `stock_name` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '股票名称',
+  `stock_exchange` char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '股票交易所 例sh sz bj',
+  `stock_code` varchar(20) CHARACTER SET utf8mb3 COLLATE utf8_bin NOT NULL COMMENT '股票代码',
+  `stock_type` int DEFAULT NULL COMMENT '股票类型 0：A股、1：指数、2：ETF、3：B股',
+  `stock_state` int DEFAULT '0' COMMENT '股票状态 0 上市 1停牌 2 退市',
+  `is_monitor` tinyint(1) DEFAULT '0' COMMENT '0 不监控 1监控',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_code` (`stock_code`) USING BTREE
+)
+
+CREATE TABLE `t_stock_trade_record` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `stock_code` char(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '股票代码',
+  `stock_trade_strategy_id` bigint unsigned NOT NULL COMMENT '政策表id',
+  `trade_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '交易类型 buy买入 sell卖出\r\n',
+  `trade_price` decimal(11,2) NOT NULL COMMENT '交易价格',
+  `trade_date` date NOT NULL COMMENT '交易日期',
+  `trade_amount` int NOT NULL COMMENT '交易数量，单位手',
+  `is_done` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否交易成功 0未交易1已交易',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_strategy_date` (`stock_trade_strategy_id`,`trade_date`) USING BTREE COMMENT '当天的策略生效后不可重复生效插入交易'
+)
+
+CREATE TABLE `t_stock_trade_strategy` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `title` varchar(64) COLLATE utf8mb4_general_ci DEFAULT NULL COMMENT '策略标题',
+  `stock_code` char(6) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '股票代码',
+  `strategy_type` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '策略类型 buy买入策略 sell卖出策略',
+  `is_work` tinyint NOT NULL DEFAULT '0' COMMENT '是否生效 0不生效 1生效',
+  `monitor_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '监测类型',
+  `compare_method` char(2) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '比较方法 gt 大于 lt 小于 eq 等于',
+  `target_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '目标类型',
+  `target_calculation_type` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '目标计算类型  fixed 固定价 目标值无需进行计算直接与比较类型当前值进行比较 percentage 百分比 获取目标类型值后按百分比（1 + 目标值）计算出目标值',
+  `target_value` decimal(11,2) NOT NULL COMMENT '目标值',
+  `traget_amount` int NOT NULL COMMENT '目标数量',
+  `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+)
