@@ -21,9 +21,9 @@ public class User {
 
     private String mobile;
 
-    private Timestamp create_time;
+    private Timestamp createTime;
 
-    private Timestamp update_time;
+    private Timestamp updateTime;
 
 
 }

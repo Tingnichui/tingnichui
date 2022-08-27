@@ -7,21 +7,19 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.sql.Date;
-import java.sql.Timestamp;
 
 /**
  * @author Geng Hui
- * @version 1.0
  * @date 2022/8/11 21:38
  */
 @Data
 @TableName(value = "t_daily_index", autoResultMap = true)
 public class DailyIndex {
 
-    @TableId(type = IdType.AUTO)
     /**
      * id
      */
+    @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**
@@ -108,7 +106,6 @@ public class DailyIndex {
      * update_time
      */
     private java.util.Date updateTime;
-
 
 
 }

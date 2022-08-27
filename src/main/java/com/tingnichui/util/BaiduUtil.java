@@ -11,6 +11,10 @@ import java.io.File;
 import java.net.URLEncoder;
 import java.util.Map;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:33
+ */
 @Component
 public class BaiduUtil {
 

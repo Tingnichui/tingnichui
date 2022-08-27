@@ -3,8 +3,7 @@ package com.tingnichui.controller;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.ResultGenerator;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -20,22 +19,22 @@ public class StockController {
     @Resource
     private StockService stockService;
 
-    @RequestMapping("/health")
+    @GetMapping("/health")
     public Result health() {
         return ResultGenerator.genSuccessResult("HEALTH");
     }
 
-    @RequestMapping("/saveDailyRecord4EastMoney")
+    @PostMapping("/saveDailyRecord4EastMoney")
     public Result saveDailyRecord4EastMoney() {
         return stockService.saveDailyRecord4EastMoney();
     }
 
-    @RequestMapping("/updateStockInfo")
+    @PutMapping("/updateStockInfo")
     public Result updateStockInfo() {
         return stockService.updateStockInfo();
     }
 
-    @RequestMapping("/updateDailyIndexAverage")
+    @PutMapping("/updateDailyIndexAverage")
     public Result updateDailyIndexAverage() {
         return stockService.updateDailyIndexAverage();
     }

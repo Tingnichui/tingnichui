@@ -10,6 +10,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:32
+ */
 @RestController
 @RequestMapping("api/trade")
 public class TradeController {

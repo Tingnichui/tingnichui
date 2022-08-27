@@ -6,11 +6,19 @@ import com.tingnichui.common.ServiceResultEnum;
 import com.tingnichui.pojo.vo.Result;
 import org.springframework.util.StringUtils;
 
+
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:33
+ */
 public class ResultGenerator {
     private static final String DEFAULT_SUCCESS_MESSAGE = "SUCCESS";
     private static final String DEFAULT_FAIL_MESSAGE = "FAIL";
     private static final String RESULT_CODE_SUCCESS = "00000";
     private static final String RESULT_CODE_SERVER_ERROR = "B0001";
+
+    private ResultGenerator() {
+    }
 
     public static Result genSuccessResult() {
         Result result = new Result();

@@ -3,10 +3,7 @@ package com.tingnichui.pojo.po;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
@@ -16,16 +13,13 @@ import java.util.Date;
  * @date 2022/8/11 22:26
  */
 @Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 @TableName(value = "t_stock_info")
 public class StockInfo {
 
-    @TableId(type = IdType.AUTO)
     /**
      * id
      */
+    @TableId(type = IdType.AUTO)
     private Integer id;
 
     /**

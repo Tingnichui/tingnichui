@@ -8,6 +8,11 @@ import com.sun.jna.platform.win32.WinUser;
 import java.util.*;
 import java.util.List;
 
+
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:34
+ */
 public class StockTradeUtil {
 
     static final User32 USER = User32.INSTANCE;

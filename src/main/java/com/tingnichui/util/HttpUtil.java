@@ -35,6 +35,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:33
+ */
 public class HttpUtil {
 
     /**

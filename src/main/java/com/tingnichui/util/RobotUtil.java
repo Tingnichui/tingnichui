@@ -1,7 +1,5 @@
 package com.tingnichui.util;
 
-import org.springframework.stereotype.Component;
-
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.datatransfer.Clipboard;
@@ -12,7 +10,10 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.lang.reflect.Field;
 
-@Component
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:34
+ */
 public class RobotUtil {
 
     static Robot robot;

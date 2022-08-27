@@ -6,7 +6,6 @@ import lombok.Data;
 
 /**
  * @author Geng Hui
- * @version 1.0
  * @date 2022/8/21 19:42
  */
 @Data

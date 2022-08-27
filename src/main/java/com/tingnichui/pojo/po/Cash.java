@@ -10,17 +10,18 @@ import java.sql.Timestamp;
 
 /**
  * @author Geng Hui
- * @version 1.0
  * @date 2022/8/2 22:25
  */
 @Data
 @TableName(value = "t_cash", autoResultMap = true)
 public class Cash {
+
     /**
      * id
      */
     @TableId(type = IdType.AUTO)
     private Integer id;
+
     /**
      * 交易金额
      */

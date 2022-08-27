@@ -5,6 +5,10 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:32
+ */
 @Data
 public class Result<T> implements Serializable {
 

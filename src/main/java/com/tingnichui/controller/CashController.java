@@ -3,13 +3,15 @@ package com.tingnichui.controller;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:31
+ */
 @RestController
 @RequestMapping("/api/cash")
 public class CashController {
@@ -17,12 +19,12 @@ public class CashController {
     @Resource
     private CashService cashService;
 
-    @RequestMapping("health")
+    @GetMapping("health")
     public Result health() {
         return ResultGenerator.genSuccessResult("HEALTH");
     }
 
-    @RequestMapping("save/{tradeAmount}/{actualAmount}")
+    @PostMapping("save/{tradeAmount}/{actualAmount}")
     public Result save(@PathVariable BigDecimal tradeAmount, @PathVariable BigDecimal actualAmount) {
         return cashService.save(tradeAmount, actualAmount);
     }

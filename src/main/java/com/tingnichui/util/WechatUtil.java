@@ -7,7 +7,10 @@ import com.alibaba.fastjson.JSONObject;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 
-
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:34
+ */
 public class WechatUtil {
 
 

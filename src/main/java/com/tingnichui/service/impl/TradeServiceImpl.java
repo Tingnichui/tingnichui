@@ -9,6 +9,10 @@ import org.springframework.stereotype.Service;
 import java.util.Arrays;
 import java.util.Map;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:32
+ */
 @Service
 public class TradeServiceImpl implements TradeService {
 

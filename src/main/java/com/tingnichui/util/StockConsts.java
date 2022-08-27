@@ -2,6 +2,11 @@ package com.tingnichui.util;
 
 import java.util.NoSuchElementException;
 
+
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:34
+ */
 public class StockConsts {
 
     public enum Exchange {

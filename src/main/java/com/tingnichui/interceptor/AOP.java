@@ -1,6 +1,7 @@
 package com.tingnichui.interceptor;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSON;
 import com.tingnichui.util.DingdingUtil;
 import com.tingnichui.util.ResultGenerator;
@@ -16,6 +17,7 @@ import org.slf4j.MDC;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.HandlerMapping;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
@@ -31,12 +33,17 @@ public class AOP {
     @Around("execution(* com.tingnichui.controller.*.*(..))")
     public Object controllerAround(ProceedingJoinPoint point) {
         //执行链条ID
-        MDC.put("processId", UUID.randomUUID().toString().replaceAll("-",""));
+        MDC.put("processId", IdUtil.simpleUUID());
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         Map<String, String[]> parameter = request.getParameterMap();
         Map<String,String> parameterMap = new HashMap<>();
-        for (String key : parameter.keySet()){
-            parameterMap.put(key, StringUtils.join(parameter.get(key),","));
+
+        if (parameter.isEmpty()) {
+            parameterMap = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        } else {
+            for (String key : parameter.keySet()){
+                parameterMap.put(key, StringUtils.join(parameter.get(key),","));
+            }
         }
         if (request.getContentType() != null && request.getContentType().toLowerCase().contains("application/json") && point.getArgs().length > 0) {
             parameterMap.put("requestBody", JSON.toJSONString(point.getArgs()[0]));
@@ -50,7 +57,7 @@ public class AOP {
         className.append(".");
         className.append(method.getName());
         //
-        long currentTimeMillis = System.currentTimeMillis();
+        long startTime = System.currentTimeMillis();
         Object obj = null;
         try {
             obj = point.proceed();
@@ -60,7 +67,7 @@ public class AOP {
             DingdingUtil.sendMsg(DateUtil.now() + "-CONTROLLER异常");
             return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
-            long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
+            long diffTimeMillis = System.currentTimeMillis() - startTime;
             // 出参日志
             String responseLog = obj == null ? null : JSON.toJSONString(obj);
             log.info("controller." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
@@ -69,21 +76,13 @@ public class AOP {
     }
 
     /** service日志 **/
-//    @Around("execution(* com.tingnichui.service.*.*(..))")
+    @Around("execution(* com.tingnichui.service.*.*(..))")
     public Object serviceAround(ProceedingJoinPoint point) {
         //执行链条ID
-        MDC.put("processId", UUID.randomUUID().toString().replaceAll("-",""));
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        Map<String, String[]> parameter = request.getParameterMap();
-        Map<String,String> parameterMap = new HashMap<>();
-        for (String key : parameter.keySet()){
-            parameterMap.put(key, StringUtils.join(parameter.get(key),","));
-        }
-        if (request.getContentType() != null && request.getContentType().toLowerCase().contains("application/json") && point.getArgs().length > 0) {
-            parameterMap.put("requestBody", JSON.toJSONString(point.getArgs()[0]));
-        }
+        MDC.put("processId", IdUtil.simpleUUID());
+        Object[] args = point.getArgs();
         //入参日志
-        String requestLog = JSON.toJSONString(parameterMap);
+        String requestLog = JSON.toJSONString(args);
         //执行方法名
         MethodSignature method = (MethodSignature) point.getSignature();
         StringBuilder className = new StringBuilder();
@@ -122,10 +121,6 @@ public class AOP {
         try {
             obj = point.proceed();
             return obj;
-//        } catch (Throwable throwable){
-//            log.error("DAO异常",throwable);
-//            DingdingUtil.sendMsg(DateUtil.now() + "-DAO异常");
-//            return ResultGenerator.genErrorResult("B001","系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             Object[] args = point.getArgs();

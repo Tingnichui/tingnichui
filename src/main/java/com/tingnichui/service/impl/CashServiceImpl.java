@@ -11,6 +11,10 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/8/25 9:32
+ */
 @Service
 public class CashServiceImpl implements CashService {
 
@@ -20,13 +24,21 @@ public class CashServiceImpl implements CashService {
     @Override
     public Result save(BigDecimal tradeAmount, BigDecimal actualAmount) {
 
+        if (tradeAmount.compareTo(BigDecimal.ZERO) <= 0 || actualAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            return ResultGenerator.genFailResult("到账金额或交易金额不得小于0");
+        }
+
+        if (tradeAmount.compareTo(actualAmount) < 0) {
+            return ResultGenerator.genFailResult("到账金额不得小于交易金额");
+        }
+
         Cash cash = new Cash();
         cash.setTradeAmount(tradeAmount);
         cash.setActualAmount(actualAmount);
         cash.setFee(NumberUtil.sub(tradeAmount, actualAmount));
         cashMapper.insert(cash);
 
-        return ResultGenerator.genSuccessResult();
+        return ResultGenerator.genSuccessResult("保存成功");
     }
 
 }

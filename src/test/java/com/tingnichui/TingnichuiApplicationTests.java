@@ -56,7 +56,7 @@ class TingnichuiApplicationTests {
 
     @Test
     void monitorTest() {
-        stockService.saveDailyRecord4EastMoney();
+//        stockService.saveDailyRecord4EastMoney();
 ////        BigDecimal bigDecimal = dailyIndexMapper.sumCloserPrice("603680", 2);
 //        System.err.println(bigDecimal);
 //        stockService.updateDailyIndexAverage();

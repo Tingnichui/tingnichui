@@ -1,7 +1,6 @@
 package com.tingnichui.task;
 
 import cn.hutool.core.util.IdUtil;
-import cn.hutool.core.util.RandomUtil;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.DingdingUtil;
 import com.tingnichui.util.StockUtil;
@@ -15,7 +14,6 @@ import java.util.Date;
 
 /**
  * @author Geng Hui
- * @version 1.0
  * @date 2022/8/14 16:58
  */
 @Slf4j
@@ -25,6 +23,9 @@ public class ScheduledTask {
     @Resource
     private StockService stockService;
 
+    @Resource
+    private StockUtil stockUtil;
+
 
     /**
      * 更新股票信息
@@ -32,7 +33,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 9 ? * MON-FRI")
     public void updateStockInfoTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
+        boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
         log.info("开始更新股票信息" + isBusinessDate);
         if (!isBusinessDate) {
             log.info("非工作日-结束更新股票信息");
@@ -54,7 +55,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 17,18,19 ? * MON-FRI")
     public void saveDailyIndexTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
+        boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
         log.info("开始保存日线数据" + isBusinessDate);
         if (!isBusinessDate) {
             return;
@@ -74,7 +75,7 @@ public class ScheduledTask {
     @Scheduled(cron = "0 0 20,21,22 ? * MON-FRI")
     public void updateDailyIndexAverageTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessDate = StockUtil.isStockTradeDate(new Date());
+        boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
         log.info("开始更新股票均线" + isBusinessDate);
         if (!isBusinessDate) {
             return;
@@ -92,10 +93,10 @@ public class ScheduledTask {
      * 实时监控监控
      */
 //    @Scheduled(cron = "0,15,30,45 * 9,10,11,13,14 ? * MON-FRI")
-    @Scheduled(cron = "0 0/10 9,10,11,13,14 ? * MON-FRI")
+    @Scheduled(cron = "0 0/1 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
         MDC.put("processId", IdUtil.simpleUUID());
-        boolean isBusinessTime = StockUtil.isStockTradeTime(new Date());
+        boolean isBusinessTime = stockUtil.isStockTradeTime(new Date());
         log.info("开始实时监控监控" + isBusinessTime);
         if (!isBusinessTime) {
             return;

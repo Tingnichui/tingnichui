@@ -7,7 +7,6 @@ import java.util.Map;
 
 /**
  * @author Geng Hui
- * @version 1.0
  * @date 2022/8/13 0:17
  */
 public class DingdingUtil {

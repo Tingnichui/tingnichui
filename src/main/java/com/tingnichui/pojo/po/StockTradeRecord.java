@@ -17,10 +17,10 @@ import java.util.Date;
 @TableName("t_stock_trade_record")
 public class StockTradeRecord {
 
-    @TableId(type = IdType.AUTO)
     /**
      * id
      */
+    @TableId(type = IdType.AUTO)
     private Long id;
 
     /**

@@ -5,18 +5,26 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+
+/**
+ * @author Geng Hui
+ * @date 2022/8/25 9:34
+ */
+@Component
 public class StockUtil {
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private RedisUtil redisUtil;
 
     private static final List<String> CODES_SH_A = Arrays.asList("600", "601", "603", "605", "688", "689");
     private static final List<String> CODES_SH_INDEX = Arrays.asList("000001");
@@ -33,12 +41,12 @@ public class StockUtil {
     private StockUtil() {
     }
 
-    public static boolean isStockTradeTime(Date date) {
+    public boolean isStockTradeTime(Date date) {
         if (date == null) {
             date = new Date();
         }
 
-        boolean isBusinessDate = isStockTradeDate(date);
+        boolean isBusinessDate = this.isStockTradeDate(date);
         if (!isBusinessDate) {
             return false;
         }
@@ -54,7 +62,7 @@ public class StockUtil {
         return !(hour == 9 && minute < 30 || hour == 11 && minute > 30);
     }
 
-    public static boolean isStockTradeDate(Date date) {
+    public boolean isStockTradeDate(Date date) {
 
         if (date == null) {
             date = new Date();
@@ -66,24 +74,29 @@ public class StockUtil {
         if (day == Calendar.SATURDAY || day == Calendar.SUNDAY) {
             return false;
         }
-        List<String> dateList = StockUtil.getHolidayList();
+        List<String> dateList = this.getHolidayList();
 
         return !dateList.contains(DateUtil.format(date, "yyyyMMdd"));
     }
 
 
-    public static List<String> getHolidayList() {
+    private List<String> getHolidayList() {
+
+        List<String> holidayList = redisUtil.getCacheObject("HOLIDAY_LIST");
+
+        if (Objects.nonNull(holidayList)) {
+            return holidayList;
+        }
+
         int year = Calendar.getInstance().get(Calendar.YEAR);
         String content = HttpUtil.get("http://tool.bitefu.net/jiari/?d=" + year);
         if (org.apache.commons.lang3.StringUtils.isBlank(content)) {
             return Collections.emptyList();
         }
-
         JSONObject jsonObject = JSON.parseObject(content);
 
-        @SuppressWarnings("unchecked")
         Map<String, Integer> dateInfo = (Map<String, Integer>) jsonObject.get(String.valueOf(year));
-        List<String> list = dateInfo.entrySet().stream().filter(entry -> entry.getValue() != 0).map(entry -> {
+        holidayList = dateInfo.entrySet().stream().filter(entry -> entry.getValue() != 0).map(entry -> {
             Date date;
             try {
                 date = DateUtils.parseDate(year + entry.getKey(), "yyyyMMdd");
@@ -93,7 +106,11 @@ public class StockUtil {
             return DateUtil.format(date, "yyyyMMdd");
         }).collect(Collectors.toList());
 
-        return list;
+        if (!holidayList.isEmpty()) {
+            redisUtil.setCacheObject("HOLIDAY_LIST", holidayList, 10, TimeUnit.HOURS);
+        }
+
+        return holidayList;
     }
 
 
@@ -153,7 +170,7 @@ public class StockUtil {
 
 
     public static BigDecimal calcIncreaseRate(BigDecimal a, BigDecimal b) {
-        return DecimalUtil.div(DecimalUtil.sub(a, b), b);
+        return a.subtract(b).divide(b, 6, BigDecimal.ROUND_HALF_UP);
     }
 
     public static boolean isOriName(String name) {
