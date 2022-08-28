@@ -1,6 +1,5 @@
 package com.tingnichui;
 
-import cn.hutool.core.date.DateUtil;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.StockTradeStrategyMapper;
@@ -16,10 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import javax.annotation.Resource;
-import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @SpringBootTest

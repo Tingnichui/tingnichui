@@ -23,26 +23,29 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
 @Slf4j
 @Aspect
 @Component
 public class AOP {
 
 
-    /** controller日志 **/
+    /**
+     * controller日志
+     **/
     @Around("execution(* com.tingnichui.controller.*.*(..))")
     public Object controllerAround(ProceedingJoinPoint point) {
         //执行链条ID
         MDC.put("processId", IdUtil.simpleUUID());
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         Map<String, String[]> parameter = request.getParameterMap();
-        Map<String,String> parameterMap = new HashMap<>();
+        Map<String, String> parameterMap = new HashMap<>(16);
 
         if (parameter.isEmpty()) {
             parameterMap = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         } else {
-            for (String key : parameter.keySet()){
-                parameterMap.put(key, StringUtils.join(parameter.get(key),","));
+            for (String key : parameter.keySet()) {
+                parameterMap.put(key, StringUtils.join(parameter.get(key), ","));
             }
         }
         if (request.getContentType() != null && request.getContentType().toLowerCase().contains("application/json") && point.getArgs().length > 0) {
@@ -63,19 +66,21 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            log.error("CONTROLLER异常",throwable);
+            log.error("CONTROLLER异常", throwable);
             DingdingUtil.sendMsg(DateUtil.now() + "-CONTROLLER异常");
-            return ResultGenerator.genErrorResult("B001","系统错误");
+            return ResultGenerator.genErrorResult("B001", "系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - startTime;
             // 出参日志
             String responseLog = obj == null ? null : JSON.toJSONString(obj);
-            log.info("controller." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("controller." + method.getName() + "|耗时={}|入参={}，出参={}|" + className, diffTimeMillis, requestLog, responseLog);
         }
 
     }
 
-    /** service日志 **/
+    /**
+     * service日志
+     **/
     @Around("execution(* com.tingnichui.service.*.*(..))")
     public Object serviceAround(ProceedingJoinPoint point) {
         //执行链条ID
@@ -96,18 +101,20 @@ public class AOP {
             obj = point.proceed();
             return obj;
         } catch (Throwable throwable) {
-            log.error("SERVICE异常",throwable);
+            log.error("SERVICE异常", throwable);
             DingdingUtil.sendMsg(DateUtil.now() + "-SERVICE异常");
-            return ResultGenerator.genErrorResult("B001","系统错误");
+            return ResultGenerator.genErrorResult("B001", "系统错误");
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             // 出参日志
             String responseLog = obj == null ? null : JSON.toJSONString(obj);
-            log.info("service." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("service." + method.getName() + "|耗时={}|入参={}，出参={}|" + className, diffTimeMillis, requestLog, responseLog);
         }
     }
 
-    /** dao日志 **/
+    /**
+     * dao日志
+     **/
     @Around("execution(* com.tingnichui.dao.*.*(..))")
     public Object daoAround(ProceedingJoinPoint point) throws Throwable {
         //方法名
@@ -126,7 +133,7 @@ public class AOP {
             Object[] args = point.getArgs();
             String requestLog = JSON.toJSONString(args);//入参
             String responseLog = obj == null ? null : JSON.toJSONString(obj);//出参
-            log.info("dao." + method.getName() + "|耗时={}|入参={}，出参={}|" + className,diffTimeMillis,requestLog,responseLog);
+            log.info("dao." + method.getName() + "|耗时={}|入参={}，出参={}|" + className, diffTimeMillis, requestLog, responseLog);
 
         }
 

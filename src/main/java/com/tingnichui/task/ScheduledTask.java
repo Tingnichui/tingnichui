@@ -119,7 +119,7 @@ public class ScheduledTask {
      * 实时监控监控
      */
 //    @Scheduled(cron = "0,15,30,45 * 9,10,11,13,14 ? * MON-FRI")
-    @Scheduled(cron = "0 0/1 9,10,11,13,14 ? * MON-FRI")
+    @Scheduled(cron = "0/15 * 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
         boolean lock = redisUtil.setCacheObject(CacheConsts.MONITOR_STOCK_TASK_LOCk, "1", 1, TimeUnit.MINUTES);
         try {
