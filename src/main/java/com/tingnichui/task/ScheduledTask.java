@@ -5,21 +5,21 @@ import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.common.CacheConsts;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.DingdingUtil;
-import com.tingnichui.util.RedisUtil;
 import com.tingnichui.util.StockUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
+import org.springframework.context.annotation.Profile;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Geng Hui
  * @date 2022/8/14 16:58
  */
+@Profile({"pro"})
 @Slf4j
 @Component
 public class ScheduledTask {
