@@ -30,6 +30,9 @@ public class TingnichuiApplication {
         SpringApplication.run(TingnichuiApplication.class, args);
     }
 
+    /**
+     * 跨域配置
+     */
     @Bean
     public CorsFilter corsFilter() {
         CorsConfiguration corsConfiguration = new CorsConfiguration();

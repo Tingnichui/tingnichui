@@ -39,11 +39,11 @@ public class ScheduledTask {
         try {
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
+            log.info("开始更新股票信息" + isBusinessDate);
             if (!isBusinessDate) {
                 log.info("非工作日-结束更新股票信息");
                 return;
             }
-            log.info("开始更新股票信息" + isBusinessDate);
             stockService.updateStockInfo();
             log.info("结束更新股票信息");
         } catch (Exception e) {
@@ -62,11 +62,11 @@ public class ScheduledTask {
         try {
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
+            log.info("开始保存日线数据" + isBusinessDate);
             if (!isBusinessDate) {
                 log.info("非工作日-结束更新股票信息");
                 return;
             }
-            log.info("开始保存日线数据" + isBusinessDate);
             stockService.saveDailyRecord4EastMoney();
             log.info("结束保存日线数据");
         } catch (Exception e) {
@@ -84,11 +84,11 @@ public class ScheduledTask {
         try {
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
+            log.info("开始更新股票均线" + isBusinessDate);
             if (!isBusinessDate) {
                 log.info("非工作日-结束更新股票均线");
                 return;
             }
-            log.info("开始更新股票均线" + isBusinessDate);
             stockService.updateDailyIndexAverage();
             log.info("结束更新股票均线");
         } catch (Exception e) {
@@ -107,11 +107,11 @@ public class ScheduledTask {
         try {
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessTime = stockUtil.isStockTradeTime(new Date());
+            log.info("开始实时监控监控" + isBusinessTime);
             if (!isBusinessTime) {
                 log.info("非交易时间-结束监控股票信息");
                 return;
             }
-            log.info("开始实时监控监控" + isBusinessTime);
             stockService.monitorStock();
             log.info("结束实时监控监控");
         } catch (Exception e) {
