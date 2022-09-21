@@ -3,6 +3,7 @@ package com.tingnichui.controller;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -27,5 +28,10 @@ public class CashController {
     @PostMapping("save/{tradeAmount}/{actualAmount}")
     public Result save(@PathVariable BigDecimal tradeAmount, @PathVariable BigDecimal actualAmount) {
         return cashService.save(tradeAmount, actualAmount);
+    }
+
+    @GetMapping("listCashRecord")
+    public Result listCashRecord() {
+        return cashService.listCashRecord();
     }
 }

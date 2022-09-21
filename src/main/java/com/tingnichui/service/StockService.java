@@ -20,4 +20,5 @@ public interface StockService {
 
     Result updateStockInfo();
 
+    Result listStockTrade();
 }

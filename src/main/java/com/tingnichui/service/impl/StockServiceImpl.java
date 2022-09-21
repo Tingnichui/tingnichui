@@ -241,7 +241,7 @@ public class StockServiceImpl implements StockService {
 
         return ResultGenerator.genSuccessResult("雪球-更新股票每日成交数据完成！");
     }
-
+    
     @Override
     public Result saveDailyRecord4EastMoney() {
 
@@ -253,7 +253,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK, "1", 30L, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -289,7 +289,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = false;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK, "1", 30L, TimeUnit.MINUTES);
 
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
@@ -572,7 +572,7 @@ public class StockServiceImpl implements StockService {
 
         boolean lock = Boolean.FALSE;
         try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO_LOCK, "1", 30, TimeUnit.MINUTES);
+            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO_LOCK, "1", 30L, TimeUnit.MINUTES);
             if (!lock) {
                 return ResultGenerator.genSuccessResult("请稍后再试");
             }
@@ -623,6 +623,13 @@ public class StockServiceImpl implements StockService {
         }
 
         return ResultGenerator.genSuccessResult("更新股票信息完成！");
+    }
+
+    @Override
+    public Result listStockTrade() {
+        List<StockTradeRecord> stockTradeRecords = stockTradeRecordMapper.selectList(null);
+
+        return ResultGenerator.genSuccessResult(stockTradeRecords);
     }
 
 

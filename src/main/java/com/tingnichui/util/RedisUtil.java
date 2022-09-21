@@ -84,7 +84,7 @@ public class RedisUtil {
      * @param timeout  过期时间
      * @param timeUnit 时间单位
      */
-    public <T> boolean setCacheObject(final String key, final T value, final Integer timeout, final TimeUnit timeUnit) {
+    public <T> boolean setCacheObject(final String key, final T value, final Long timeout, final TimeUnit timeUnit) {
         return redisTemplate.opsForValue().setIfAbsent(key, value, timeout, timeUnit);
     }
 

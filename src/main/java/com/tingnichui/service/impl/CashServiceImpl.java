@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * @author  Geng Hui
@@ -39,6 +40,12 @@ public class CashServiceImpl implements CashService {
         cashMapper.insert(cash);
 
         return ResultGenerator.genSuccessResult("保存成功");
+    }
+
+    @Override
+    public Result listCashRecord() {
+        List<Cash> cashList = cashMapper.selectList(null);
+        return ResultGenerator.genSuccessResult(cashList);
     }
 
 }

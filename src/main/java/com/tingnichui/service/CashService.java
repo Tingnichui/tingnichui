@@ -10,4 +10,5 @@ import java.math.BigDecimal;
  */
 public interface CashService {
     Result save(BigDecimal tradeAmount, BigDecimal actualAmount);
+    Result listCashRecord();
 }
