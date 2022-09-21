@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RedisLock {
-    String key();
+    String key() default "";
     String value() default "1";
     long expire() default 60L;
     TimeUnit timeUnit() default TimeUnit.SECONDS;

@@ -25,6 +25,10 @@ import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author  Geng Hui
+ * @date  2022/9/21 17:25
+ */
 @Slf4j
 @Aspect
 @Component
@@ -42,8 +46,24 @@ public class AOP {
     public Object redisLock(ProceedingJoinPoint point) {
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
+        // 获取方法上的注解
         RedisLock redisLock = method.getAnnotation(RedisLock.class);
         String redisKey = redisLock.key();
+        // 获取方法全路径、方法名、方法参数做为redis key
+        if (StringUtils.isBlank(redisKey)) {
+            StringBuilder methodInfo = new StringBuilder("RedisLock|");
+            methodInfo.append(signature.getDeclaringTypeName());
+            methodInfo.append(".");
+            methodInfo.append(signature.getName());
+            Object[] args = point.getArgs();
+            for (int k = 0; k < args.length; k++) {
+                if (!args[k].getClass().isPrimitive()) {
+                    // 获取的是封装类型而不是基础类型
+                    methodInfo.append(args[k].getClass().getName());
+                }
+            }
+            redisKey = methodInfo.toString();
+        }
         // 加锁
         boolean lock = false;
         try {
