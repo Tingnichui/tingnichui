@@ -9,6 +9,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.common.CacheConsts;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
@@ -241,7 +242,8 @@ public class StockServiceImpl implements StockService {
 
         return ResultGenerator.genSuccessResult("雪球-更新股票每日成交数据完成！");
     }
-    
+
+    @RedisLock(key = CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK)
     @Override
     public Result saveDailyRecord4EastMoney() {
 
@@ -250,35 +252,23 @@ public class StockServiceImpl implements StockService {
             return ResultGenerator.genSuccessResult("东方财富-16点之后并且时工作日才允许保存日线记录！");
         }
 
-
-        boolean lock = false;
-        try {
-            lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK, "1", 30L, TimeUnit.MINUTES);
-            if (!lock) {
-                return ResultGenerator.genSuccessResult("请稍后再试");
-            }
-
-            // 获取未退市的股票和指数
-            List<StockInfo> stockInfoList = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getStockType() == 0 || stockInfo.getStockType() == 1) && 2 != stockInfo.getStockState()).collect(Collectors.toList());
-            // 获取当天的日线
-            List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
-            // 获取代码股票代码集合
-            List<String> codeList = dailyIndexList.stream().map(DailyIndex::getStockCode).collect(Collectors.toList());
-            // 剔除已经爬取到的股票
-            stockInfoList = stockInfoList.stream().filter(v -> !codeList.contains(v.getStockCode())).collect(Collectors.toList());
+        // 获取未退市的股票和指数
+        List<StockInfo> stockInfoList = stockInfoMapper.selectList(null).stream().filter(stockInfo -> (stockInfo.getStockType() == 0 || stockInfo.getStockType() == 1) && 2 != stockInfo.getStockState()).collect(Collectors.toList());
+        // 获取当天的日线
+        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
+        // 获取代码股票代码集合
+        List<String> codeList = dailyIndexList.stream().map(DailyIndex::getStockCode).collect(Collectors.toList());
+        // 剔除已经爬取到的股票
+        stockInfoList = stockInfoList.stream().filter(v -> !codeList.contains(v.getStockCode())).collect(Collectors.toList());
 
 
-            this.crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
-            this.crawDailyIndexFromEastMoney(stockInfoList);
-        } finally {
-            if (lock) {
-                redisUtil.deleteObject(CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK);
-            }
-        }
+        this.crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
+        this.crawDailyIndexFromEastMoney(stockInfoList);
         return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
 
     }
 
+    @RedisLock(key = CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK)
     @Override
     public Result updateDailyIndexAverage() {
         // 16点之前或者当天不是工作日不可以保存更新均线值
@@ -287,65 +277,51 @@ public class StockServiceImpl implements StockService {
         }
 
 
-        boolean lock = false;
-        try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK, "1", 30L, TimeUnit.MINUTES);
-
-            if (!lock) {
-                return ResultGenerator.genSuccessResult("请稍后再试");
-            }
-
-            // 获取今日所有的日线信息
-            List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
-            // 遍历计算5 10 20 100 500 均线
-            for (DailyIndex dailyIndex : dailyIndexList) {
-                Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
+        // 获取今日所有的日线信息
+        List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
+        // 遍历计算5 10 20 100 500 均线
+        for (DailyIndex dailyIndex : dailyIndexList) {
+            Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
 
 
-                if (count >= 5) {
-                    count = count > 500 ? 500 : count;
-                    // 按日期倒序获得所有记录
-                    List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
-                            new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()).orderByDesc(DailyIndex::getStockDate)).getRecords();
+            if (count >= 5) {
+                count = count > 500 ? 500 : count;
+                // 按日期倒序获得所有记录
+                List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
+                        new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()).orderByDesc(DailyIndex::getStockDate)).getRecords();
 
-                    dailyIndex.setMa5(BigDecimal
-                            .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
+                dailyIndex.setMa5(BigDecimal
+                        .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
+                                .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                if (count >= 10) {
+                    dailyIndex.setMa10(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                    if (count >= 10) {
-                        dailyIndex.setMa10(BigDecimal
-                                .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
-                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                    }
-                    if (count >= 20) {
-                        dailyIndex.setMa20(BigDecimal
-                                .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
-                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                    }
-                    if (count >= 100) {
-                        dailyIndex.setMa100(BigDecimal
-                                .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
-                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                    }
-                    if (count >= 500) {
-                        dailyIndex.setMa500(BigDecimal
-                                .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
-                                        .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                    }
-
-                    dailyIndexMapper.updateById(dailyIndex);
+                }
+                if (count >= 20) {
+                    dailyIndex.setMa20(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
+                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                }
+                if (count >= 100) {
+                    dailyIndex.setMa100(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
+                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                }
+                if (count >= 500) {
+                    dailyIndex.setMa500(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
+                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
 
+                dailyIndexMapper.updateById(dailyIndex);
             }
-        } finally {
-            if (lock) {
-                redisUtil.deleteObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK);
-            }
+
         }
 
         return ResultGenerator.genSuccessResult("更新股票ma5 ma10 ma20 ma100 ma500！");
 
     }
-
 
     @Override
     public Result monitorStock() {
@@ -567,60 +543,49 @@ public class StockServiceImpl implements StockService {
 
     }
 
+    @RedisLock(key = CacheConsts.UPDATE_STOCK_INFO_LOCK)
     @Override
     public Result updateStockInfo() {
+        // 获取当前t_stock_info中的所有不是指数的股票
+        List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(v -> v.getStockType() != 1).collect(Collectors.toList());
+        // 股票名称：股票代码 为了检查爬取的股票信息是否已经存
+        Map<String, List<StockInfo>> checkStockInfoMap = list.stream().collect(Collectors.groupingBy(StockInfo::getStockCode));
 
-        boolean lock = Boolean.FALSE;
-        try {
-            lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO_LOCK, "1", 30L, TimeUnit.MINUTES);
-            if (!lock) {
-                return ResultGenerator.genSuccessResult("请稍后再试");
+        ArrayList<StockInfo> needAddList = new ArrayList<>();
+        ArrayList<StockInfo> needUpdateList = new ArrayList<>();
+        // 爬取股票信息
+        List<StockInfo> crawlerList = this.getStockList("f12,f13,f14").stream().map(EmStock::getStockInfo).collect(Collectors.toList());
+        for (StockInfo stockInfo : crawlerList) {
+            StockConsts.StockLogType stocLogType = null;
+            // 检查是否存在 为空则需要添加，否则判断是否有变更，有的话需要更新
+            List<StockInfo> existStockInfoList = checkStockInfoMap.get(stockInfo.getStockCode());
+            if (existStockInfoList == null) {
+                stocLogType = StockConsts.StockLogType.New;
+            } else {
+                StockInfo existStockInfo = existStockInfoList.get(0);
+                if (!stockInfo.getStockName().equals(existStockInfo.getStockName()) && StockUtil.isOriName(stockInfo.getStockName())) {
+                    stocLogType = StockConsts.StockLogType.Rename;
+                    stockInfo.setId(existStockInfo.getId());
+                }
             }
 
-            // 获取当前t_stock_info中的所有不是指数的股票
-            List<StockInfo> list = stockInfoMapper.selectList(null).stream().filter(v -> v.getStockType() != 1).collect(Collectors.toList());
-            // 股票名称：股票代码 为了检查爬取的股票信息是否已经存
-            Map<String, List<StockInfo>> checkStockInfoMap = list.stream().collect(Collectors.groupingBy(StockInfo::getStockCode));
-
-            ArrayList<StockInfo> needAddList = new ArrayList<>();
-            ArrayList<StockInfo> needUpdateList = new ArrayList<>();
-            // 爬取股票信息
-            List<StockInfo> crawlerList = this.getStockList("f12,f13,f14").stream().map(EmStock::getStockInfo).collect(Collectors.toList());
-            for (StockInfo stockInfo : crawlerList) {
-                StockConsts.StockLogType stocLogType = null;
-                // 检查是否存在 为空则需要添加，否则判断是否有变更，有的话需要更新
-                List<StockInfo> existStockInfoList = checkStockInfoMap.get(stockInfo.getStockCode());
-                if (existStockInfoList == null) {
-                    stocLogType = StockConsts.StockLogType.New;
+            if (stocLogType != null) {
+                if (stocLogType == StockConsts.StockLogType.New) {
+                    needAddList.add(stockInfo);
                 } else {
-                    StockInfo existStockInfo = existStockInfoList.get(0);
-                    if (!stockInfo.getStockName().equals(existStockInfo.getStockName()) && StockUtil.isOriName(stockInfo.getStockName())) {
-                        stocLogType = StockConsts.StockLogType.Rename;
-                        stockInfo.setId(existStockInfo.getId());
-                    }
+                    needUpdateList.add(stockInfo);
                 }
-
-                if (stocLogType != null) {
-                    if (stocLogType == StockConsts.StockLogType.New) {
-                        needAddList.add(stockInfo);
-                    } else {
-                        needUpdateList.add(stockInfo);
-                    }
-                }
-            }
-
-            for (StockInfo stockInfo : needAddList) {
-                stockInfoMapper.insert(stockInfo);
-            }
-
-            for (StockInfo stockInfo : needUpdateList) {
-                stockInfoMapper.updateById(stockInfo);
-            }
-        } finally {
-            if (lock) {
-                redisUtil.deleteObject(CacheConsts.UPDATE_STOCK_INFO_LOCK);
             }
         }
+
+        for (StockInfo stockInfo : needAddList) {
+            stockInfoMapper.insert(stockInfo);
+        }
+
+        for (StockInfo stockInfo : needUpdateList) {
+            stockInfoMapper.updateById(stockInfo);
+        }
+
 
         return ResultGenerator.genSuccessResult("更新股票信息完成！");
     }

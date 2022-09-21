@@ -57,7 +57,7 @@ public class AOP {
             Object proceed = point.proceed();
             return proceed;
         } catch (Throwable throwable) {
-            log.error(method.getName() + "执行异常",throwable);
+            log.error(method.getName() + "执行异常", throwable);
             return ResultGenerator.genFailResult("系统异常");
         } finally {
             if (lock) {
@@ -171,8 +171,6 @@ public class AOP {
             String requestLog = JSON.toJSONString(args);//入参
             String responseLog = obj == null ? null : JSON.toJSONString(obj);//出参
             log.info("dao." + method.getName() + "|耗时={}|入参={}，出参={}|" + className, diffTimeMillis, requestLog, responseLog);
-
         }
-
     }
 }

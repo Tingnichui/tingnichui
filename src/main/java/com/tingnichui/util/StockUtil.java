@@ -107,7 +107,7 @@ public class StockUtil {
         }).collect(Collectors.toList());
 
         if (!holidayList.isEmpty()) {
-            redisUtil.setCacheObject("HOLIDAY_LIST", holidayList, 10, TimeUnit.HOURS);
+            redisUtil.setCacheObject("HOLIDAY_LIST", holidayList, 10L, TimeUnit.HOURS);
         }
 
         return holidayList;

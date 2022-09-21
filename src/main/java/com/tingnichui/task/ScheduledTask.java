@@ -1,6 +1,7 @@
 package com.tingnichui.task;
 
 import cn.hutool.core.util.IdUtil;
+import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.common.CacheConsts;
 import com.tingnichui.service.StockService;
 import com.tingnichui.util.DingdingUtil;
@@ -29,20 +30,13 @@ public class ScheduledTask {
     @Resource
     private StockUtil stockUtil;
 
-    @Resource
-    private RedisUtil redisUtil;
-
-
     /**
      * 更新股票信息
      */
+    @RedisLock(key = CacheConsts.UPDATE_STOCK_INFO_TASK_LOCK)
     @Scheduled(cron = "0 0 9 ? * MON-FRI")
     public void updateStockInfoTask() {
-        boolean lock = redisUtil.setCacheObject(CacheConsts.UPDATE_STOCK_INFO_TASK_LOCK, "1", 1, TimeUnit.MINUTES);
         try {
-            if (!lock) {
-                return;
-            }
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
             if (!isBusinessDate) {
@@ -55,8 +49,6 @@ public class ScheduledTask {
         } catch (Exception e) {
             DingdingUtil.sendMsg("更新股票信息异常!");
             log.error("更新股票信息异常", e);
-        } finally {
-            redisUtil.deleteObject(CacheConsts.UPDATE_STOCK_INFO_TASK_LOCK);
         }
     }
 
@@ -64,13 +56,10 @@ public class ScheduledTask {
     /**
      * 保存日线数据
      */
+    @RedisLock(key = CacheConsts.SAVE_DAILY_RECORD_TASK_LOCK)
     @Scheduled(cron = "0 0 17,18,19 ? * MON-FRI")
     public void saveDailyIndexTask() {
-        boolean lock = redisUtil.setCacheObject(CacheConsts.SAVE_DAILY_RECORD_TASK_LOCK, "1", 1, TimeUnit.MINUTES);
         try {
-            if (!lock) {
-                return;
-            }
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
             if (!isBusinessDate) {
@@ -83,21 +72,16 @@ public class ScheduledTask {
         } catch (Exception e) {
             DingdingUtil.sendMsg("保存日线数据异常!");
             log.error("保存日线数据异常", e);
-        } finally {
-            redisUtil.deleteObject(CacheConsts.SAVE_DAILY_RECORD_TASK_LOCK);
         }
     }
 
     /**
      * 更新股票均线
      */
+    @RedisLock(key = CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_TASK_LOCK)
     @Scheduled(cron = "0 0 20,21,22 ? * MON-FRI")
     public void updateDailyIndexAverageTask() {
-        boolean lock = redisUtil.setCacheObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_TASK_LOCK, "1", 1, TimeUnit.MINUTES);
         try {
-            if (!lock) {
-                return;
-            }
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessDate = stockUtil.isStockTradeDate(new Date());
             if (!isBusinessDate) {
@@ -110,8 +94,6 @@ public class ScheduledTask {
         } catch (Exception e) {
             DingdingUtil.sendMsg("保存日线数据异常!");
             log.error("更新股票均线异常", e);
-        } finally {
-            redisUtil.deleteObject(CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_TASK_LOCK);
         }
     }
 
@@ -119,13 +101,10 @@ public class ScheduledTask {
      * 实时监控监控
      */
 //    @Scheduled(cron = "0,15,30,45 * 9,10,11,13,14 ? * MON-FRI")
+    @RedisLock(key = CacheConsts.MONITOR_STOCK_TASK_LOCk)
     @Scheduled(cron = "0/15 * 9,10,11,13,14 ? * MON-FRI")
     public void monitorStockTask() {
-        boolean lock = redisUtil.setCacheObject(CacheConsts.MONITOR_STOCK_TASK_LOCk, "1", 1, TimeUnit.MINUTES);
         try {
-            if (!lock) {
-                return;
-            }
             MDC.put("processId", IdUtil.simpleUUID());
             boolean isBusinessTime = stockUtil.isStockTradeTime(new Date());
             if (!isBusinessTime) {
@@ -138,8 +117,6 @@ public class ScheduledTask {
         } catch (Exception e) {
             DingdingUtil.sendMsg("实时监测股票数据异常!");
             log.error("实时监测股票数据异常", e);
-        } finally {
-            redisUtil.deleteObject(CacheConsts.MONITOR_STOCK_TASK_LOCk);
         }
     }
 
