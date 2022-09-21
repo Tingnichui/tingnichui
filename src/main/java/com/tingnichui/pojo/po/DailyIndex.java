@@ -72,6 +72,12 @@ public class DailyIndex {
      */
     private BigDecimal rurnoverRate;
 
+
+    /**
+     * 日涨幅
+     */
+    private BigDecimal increase;
+
     /**
      * 5日均线值
      */

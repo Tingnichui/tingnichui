@@ -272,10 +272,10 @@ public class StockServiceImpl implements StockService {
     @Override
     public Result updateDailyIndexAverage() {
         // 16点之前或者当天不是工作日不可以保存更新均线值
-        if (DateUtil.hour(new Date(), true) < 16 || !stockUtil.isStockTradeDate(new Date())) {
+        Date date = new Date();
+        if (DateUtil.hour(date, true) < 16 || !stockUtil.isStockTradeDate(date)) {
             return ResultGenerator.genSuccessResult("东方财富-16点之前或者当天不是工作日不可以更新均线值！");
         }
-
 
         // 获取今日所有的日线信息
         List<DailyIndex> dailyIndexList = dailyIndexMapper.selectList(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockDate, new java.sql.Date(System.currentTimeMillis())));
@@ -283,39 +283,50 @@ public class StockServiceImpl implements StockService {
         for (DailyIndex dailyIndex : dailyIndexList) {
             Integer count = dailyIndexMapper.selectCount(new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()));
 
-
             if (count >= 5) {
                 count = count > 500 ? 500 : count;
                 // 按日期倒序获得所有记录
                 List<DailyIndex> dailyIndexList4calculate = dailyIndexMapper.selectPage(new Page<>(1, count),
                         new LambdaQueryWrapper<DailyIndex>().eq(DailyIndex::getStockCode, dailyIndex.getStockCode()).orderByDesc(DailyIndex::getStockDate)).getRecords();
 
-                dailyIndex.setMa5(BigDecimal
-                        .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
-                                .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
-                if (count >= 10) {
+                if (Objects.isNull(dailyIndex.getMa5())) {
+                    dailyIndex.setMa5(BigDecimal
+                            .valueOf(dailyIndexList4calculate.subList(0, 5).stream().map(DailyIndex::getClosePrice)
+                                    .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
+                }
+
+                if (Objects.isNull(dailyIndex.getMa10()) && count >= 10) {
                     dailyIndex.setMa10(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 10).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count >= 20) {
+                if (Objects.isNull(dailyIndex.getMa20()) && count >= 20) {
                     dailyIndex.setMa20(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 20).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count >= 100) {
+                if (Objects.isNull(dailyIndex.getMa100()) && count >= 100) {
                     dailyIndex.setMa100(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 100).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
-                if (count >= 500) {
+                if (Objects.isNull(dailyIndex.getMa500()) && count >= 500) {
                     dailyIndex.setMa500(BigDecimal
                             .valueOf(dailyIndexList4calculate.subList(0, 500).stream().map(DailyIndex::getClosePrice)
                                     .collect(Collectors.averagingDouble(BigDecimal::doubleValue))));
                 }
 
-                dailyIndexMapper.updateById(dailyIndex);
             }
+
+            // 计算涨幅（今日收盘价-昨日收盘价）/昨日收盘价*100
+            BigDecimal preClosePrice = dailyIndex.getPreClosePrice();
+            BigDecimal closePrice = dailyIndex.getClosePrice();
+            if (Objects.isNull(dailyIndex.getIncrease()) && Objects.nonNull(preClosePrice) && Objects.nonNull(closePrice)) {
+                dailyIndex.setIncrease(NumberUtil.mul(NumberUtil.div(NumberUtil.sub(closePrice, preClosePrice),preClosePrice),new BigDecimal("100")));
+                dailyIndex.setUpdateTime(date);
+            }
+            dailyIndexMapper.updateById(dailyIndex);
+
 
         }
 
