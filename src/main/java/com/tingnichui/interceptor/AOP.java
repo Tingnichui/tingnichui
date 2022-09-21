@@ -3,7 +3,9 @@ package com.tingnichui.interceptor;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSON;
+import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.util.DingdingUtil;
+import com.tingnichui.util.RedisUtil;
 import com.tingnichui.util.ResultGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -19,7 +21,9 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -28,6 +32,39 @@ import java.util.UUID;
 @Aspect
 @Component
 public class AOP {
+
+    @Resource
+    private RedisUtil redisUtil;
+
+    /**
+     * redis锁
+     * @param point
+     * @return
+     */
+    @Around("@annotation(com.tingnichui.annotation.RedisLock))")
+    public Object redisLock(ProceedingJoinPoint point) {
+        MethodSignature signature = (MethodSignature) point.getSignature();
+        Method method = signature.getMethod();
+        RedisLock redisLock = method.getAnnotation(RedisLock.class);
+        String redisKey = redisLock.key();
+        // 加锁
+        boolean lock = false;
+        try {
+            lock = redisUtil.setCacheObject(redisKey, redisLock.value(), redisLock.expire(), redisLock.timeUnit());
+            if (!lock) {
+                return ResultGenerator.genFailResult("请稍后再试");
+            }
+            Object proceed = point.proceed();
+            return proceed;
+        } catch (Throwable throwable) {
+            log.error(method.getName() + "执行异常",throwable);
+            return ResultGenerator.genFailResult("系统异常");
+        } finally {
+            if (lock) {
+                redisUtil.deleteObject(redisKey);
+            }
+        }
+    }
 
 
     /**
