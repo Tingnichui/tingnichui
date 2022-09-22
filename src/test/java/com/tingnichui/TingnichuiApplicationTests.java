@@ -3,7 +3,6 @@ package com.tingnichui;
 import com.tingnichui.dao.DailyIndexMapper;
 import com.tingnichui.dao.StockInfoMapper;
 import com.tingnichui.dao.StockTradeStrategyMapper;
-import com.tingnichui.dao.UserMapper;
 import com.tingnichui.pojo.po.StockTradeStrategy;
 import com.tingnichui.service.StockService;
 import com.tingnichui.service.impl.StockServiceImpl;
@@ -25,14 +24,10 @@ class TingnichuiApplicationTests {
     private BaiduUtil baiduUtil;
 
     @Resource
-    private UserMapper userMapper;
-
-    @Resource
     private StockTradeStrategyMapper stockTradeStrategyMapper;
 
     @Resource
     private StockInfoMapper stockInfoMapper;
-
 
     @Resource
     private StockService stockService;
