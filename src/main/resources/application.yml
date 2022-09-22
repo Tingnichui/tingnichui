@@ -19,6 +19,9 @@ spring:
     host: 127.0.0.1
     port: 6379
     connect-timeout: 10000
+  mvc:
+    pathmatch:
+      matching-strategy: ant_path_matcher
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.tingnichui.dao

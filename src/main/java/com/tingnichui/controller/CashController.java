@@ -3,6 +3,7 @@ package com.tingnichui.controller;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
+import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,6 +21,7 @@ public class CashController {
     @Resource
     private CashService cashService;
 
+    @ApiOperation(value = "测试服务是否正常运行")
     @GetMapping("health")
     public Result health() {
         return ResultGenerator.genSuccessResult("HEALTH");
