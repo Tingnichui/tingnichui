@@ -59,9 +59,6 @@ public class StockServiceImpl implements StockService {
     private StockTradeRecordMapper stockTradeRecordMapper;
 
     @Resource
-    private RedisUtil redisUtil;
-
-    @Resource
     private StockUtil stockUtil;
 
     @Value("${xueqiu_url}")
@@ -77,7 +74,6 @@ public class StockServiceImpl implements StockService {
         if (DateUtil.hour(new Date(), true) < 16 || !stockUtil.isStockTradeDate(new Date())) {
             return ResultGenerator.genSuccessResult("雪球-16点之后并且时工作日才允许保存日线记录！");
         }
-
 
         try {
 
@@ -118,7 +114,7 @@ public class StockServiceImpl implements StockService {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("updateStock4xueqiu异常",e);
             return ResultGenerator.genFailResult("未成功爬取数据！");
         }
         return ResultGenerator.genSuccessResult("股票每日成交量、MA5、MA10、MA20更新完成！");
@@ -270,7 +266,7 @@ public class StockServiceImpl implements StockService {
 
     @RedisLock(key = CacheConsts.UPDATE_DAILY_INDEX_AVERAGE_LOCK)
     @Override
-    public Result updateDailyIndexAverage() {
+    public Result updateDailyIndexAverageAndIncrease() {
         // 16点之前或者当天不是工作日不可以保存更新均线值
         Date date = new Date();
         if (DateUtil.hour(date, true) < 16 || !stockUtil.isStockTradeDate(date)) {
@@ -597,7 +593,6 @@ public class StockServiceImpl implements StockService {
             stockInfoMapper.updateById(stockInfo);
         }
 
-
         return ResultGenerator.genSuccessResult("更新股票信息完成！");
     }
 
@@ -607,7 +602,6 @@ public class StockServiceImpl implements StockService {
 
         return ResultGenerator.genSuccessResult(stockTradeRecords);
     }
-
 
     private void crawDailyIndexFromSina(List<StockInfo> list) {
         final int tCount = 500;

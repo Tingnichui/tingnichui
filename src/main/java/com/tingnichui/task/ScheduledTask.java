@@ -89,7 +89,7 @@ public class ScheduledTask {
                 log.info("非工作日-结束更新股票均线");
                 return;
             }
-            stockService.updateDailyIndexAverage();
+            stockService.updateDailyIndexAverageAndIncrease();
             log.info("结束更新股票均线");
         } catch (Exception e) {
             DingdingUtil.sendMsg("保存日线数据异常!");

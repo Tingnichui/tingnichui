@@ -45,7 +45,9 @@ public class StockTradeUtil {
      * @throws Exception
      */
     public static String buy(List<String> buyList) throws Exception {
-        if (buyList.size() != 3 || buyList.get(0).length() != 6) return "参数异常";
+        if (buyList.size() != 3 || buyList.get(0).length() != 6) {
+            return "参数异常";
+        }
         //获取句柄
         WinDef.HWND primaryHandle = Win32Util.getPrimaryHandle(null, "网上股票交易系统5.0");
         Thread.sleep(1000);
@@ -72,7 +74,9 @@ public class StockTradeUtil {
      * @throws Exception
      */
     public static String sell(List<String> sellList) throws Exception {
-        if (sellList.size() != 3 || sellList.get(0).length() != 6) return "参数异常";
+        if (sellList.size() != 3 || sellList.get(0).length() != 6) {
+            return "参数异常";
+        }
         //获取句柄
         WinDef.HWND primaryHandle = Win32Util.getPrimaryHandle(null, "网上股票交易系统5.0");
         Thread.sleep(1000);

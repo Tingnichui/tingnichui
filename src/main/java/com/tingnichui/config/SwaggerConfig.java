@@ -30,8 +30,8 @@ public class SwaggerConfig {
         return new ApiInfoBuilder()
                 .title("Swagger Test App Restful API")
                 .description("swagger test app restful api")
-                .termsOfServiceUrl("https://github.com/geekxingyun")
-                .contact(new Contact("技术宅星云","https://xingyun.blog.csdn.net","fairy_xingyun@hotmail.com"))
+                .termsOfServiceUrl("https://github.com/Tingnicui/tingnichui")
+                .contact(new Contact("听你吹","http://www.tingnichui.com","1173527431@qq.com"))
                 .version("1.0")
                 .build();
     }
