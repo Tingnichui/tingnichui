@@ -53,8 +53,6 @@ public class AOP {
     public void webLog() {
     }
 
-
-
     @Around("webLog()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
         MDC.put("processId", IdUtil.simpleUUID());
