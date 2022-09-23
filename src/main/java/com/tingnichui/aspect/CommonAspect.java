@@ -1,4 +1,4 @@
-package com.tingnichui.interceptor;
+package com.tingnichui.aspect;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
@@ -44,7 +44,7 @@ import java.util.Map;
 @Slf4j
 @Aspect
 @Component
-public class AOP {
+public class CommonAspect {
 
     @Resource
     private RedisUtil redisUtil;
