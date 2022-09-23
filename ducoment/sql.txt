@@ -101,3 +101,17 @@ CREATE TABLE `t_stock_trade_strategy`  (
   `create_time` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE
 )
+
+create table t_user
+(
+    id          bigint unsigned auto_increment
+        primary key,
+    user_name   varchar(32)                        null comment '用户昵称',
+    password    varchar(64)                        null comment '密码',
+    mobile      varchar(32)                        null comment '手机号',
+    email       varchar(64)                        null comment '邮箱',
+    status      tinyint(1)                         null comment '帐号启用状态：0->禁用；1->启用',
+    login_time  datetime                           null comment '最后登录时间',
+    create_time datetime default CURRENT_TIMESTAMP null comment '创建时间',
+    update_time datetime default CURRENT_TIMESTAMP null on update CURRENT_TIMESTAMP comment '更新时间'
+);

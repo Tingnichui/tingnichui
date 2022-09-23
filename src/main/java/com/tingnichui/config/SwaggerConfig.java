@@ -45,7 +45,7 @@ public class SwaggerConfig {
     public Docket createRestApi(ApiInfo apiInfo) {
         return new Docket(DocumentationType.OAS_30)
                 // 在测试环境才加载
-                .enable("dev".equals(SpringUtil.getActiveProfile()))
+//                .enable("dev".equals(SpringUtil.getActiveProfile()))
                 .apiInfo(apiInfo)
                 .groupName("SwaggerGroupOneAPI")
                 .select()

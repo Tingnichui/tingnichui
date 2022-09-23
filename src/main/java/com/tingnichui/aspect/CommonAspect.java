@@ -8,6 +8,7 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.fastjson.JSON;
 import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.pojo.bo.WebLog;
+import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.util.DingdingUtil;
 import com.tingnichui.util.RedisUtil;
 import com.tingnichui.util.ResultGenerator;
@@ -55,44 +56,58 @@ public class CommonAspect {
 
     @Around("webLog()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
-        MDC.put("processId", IdUtil.simpleUUID());
-        long startTime = System.currentTimeMillis();
-        //获取当前请求对象
+        WebLog webLog = new WebLog();
+
+        String trace = IdUtil.simpleUUID();
+        MDC.put("processId", trace);
+
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         HttpServletRequest request = attributes.getRequest();
-        //记录请求信息(通过Logstash传入Elasticsearch)
-        WebLog webLog = new WebLog();
-        Object result = joinPoint.proceed();
-        long endTime = System.currentTimeMillis();
         Signature signature = joinPoint.getSignature();
         MethodSignature methodSignature = (MethodSignature) signature;
         Method method = methodSignature.getMethod();
-        webLog.setMethodSignature(signature.toString());
-        if (method.isAnnotationPresent(ApiOperation.class)) {
-            ApiOperation log = method.getAnnotation(ApiOperation.class);
-            webLog.setDescription(log.value());
-        }
-        String urlStr = request.getRequestURL().toString();
-        webLog.setBasePath(StrUtil.removeSuffix(urlStr, URLUtil.url(urlStr).getPath()));
-        webLog.setUsername(request.getRemoteUser());
-        webLog.setIp(request.getRemoteAddr());
-        webLog.setMethod(request.getMethod());
-        webLog.setParameter(getParameter(method, joinPoint.getArgs()));
-        webLog.setResult(result);
-        webLog.setSpendTime((int) (endTime - startTime));
-        webLog.setStartTime(startTime);
-        webLog.setUri(request.getRequestURI());
-        webLog.setUrl(request.getRequestURL().toString());
+        try {
+            long startTime = System.currentTimeMillis();
+            //记录请求信息(通过Logstash传入Elasticsearch)
+            Object result = joinPoint.proceed();
+            long endTime = System.currentTimeMillis();
+            // 日志
+            webLog.setMethodSignature(signature.toString());
+            if (method.isAnnotationPresent(ApiOperation.class)) {
+                ApiOperation log = method.getAnnotation(ApiOperation.class);
+                webLog.setDescription(log.value());
+            }
+            if (result instanceof Result) {
+                ((Result<?>) result).setTrace(trace);
+            }
+            webLog.setResult(result);
+            String urlStr = request.getRequestURL().toString();
+            webLog.setBasePath(StrUtil.removeSuffix(urlStr, URLUtil.url(urlStr).getPath()));
+            webLog.setUsername(request.getRemoteUser());
+            webLog.setIp(request.getRemoteAddr());
+            webLog.setMethod(request.getMethod());
+            webLog.setParameter(getParameter(method, joinPoint.getArgs()));
+            webLog.setResult(result);
+            webLog.setSpendTime((int) (endTime - startTime));
+            webLog.setStartTime(startTime);
+            webLog.setUri(request.getRequestURI());
+            webLog.setUrl(request.getRequestURL().toString());
 //        Map<String,Object> logMap = new HashMap<>();
 //        logMap.put("url",webLog.getUrl());
 //        logMap.put("method",webLog.getMethod());
 //        logMap.put("parameter",webLog.getParameter());
 //        logMap.put("spendTime",webLog.getSpendTime());
 //        logMap.put("description",webLog.getDescription());
-        log.info("{}", JSONUtil.parse(webLog));
 //        log.info(JSONUtil.parse(webLog).toString());
 //        log.info(Markers.appendEntries(logMap), JSONUtil.parse(webLog).toString());
-        return result;
+            return result;
+        } catch (Throwable throwable) {
+            log.error("CONTROLLER异常", throwable);
+            DingdingUtil.sendMsg(DateUtil.now() + "-CONTROLLER异常");
+            return ResultGenerator.error();
+        } finally {
+            log.info("{}", JSONUtil.parse(webLog));
+        }
     }
 
     /**
@@ -161,13 +176,13 @@ public class CommonAspect {
         try {
             lock = redisUtil.setCacheObject(redisKey, redisLock.value(), redisLock.expire(), redisLock.timeUnit());
             if (!lock) {
-                return ResultGenerator.genFailResult("请稍后再试");
+                return ResultGenerator.fail("请稍后再试");
             }
             Object proceed = point.proceed();
             return proceed;
         } catch (Throwable throwable) {
             log.error(method.getName() + "执行异常", throwable);
-            return ResultGenerator.genFailResult("系统异常");
+            return ResultGenerator.fail("系统异常");
         } finally {
             if (lock) {
                 redisUtil.deleteObject(redisKey);
@@ -214,7 +229,7 @@ public class CommonAspect {
         } catch (Throwable throwable) {
             log.error("CONTROLLER异常", throwable);
             DingdingUtil.sendMsg(DateUtil.now() + "-CONTROLLER异常");
-            return ResultGenerator.genErrorResult("B001", "系统错误");
+            return ResultGenerator.error();
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - startTime;
             // 出参日志
@@ -249,7 +264,7 @@ public class CommonAspect {
         } catch (Throwable throwable) {
             log.error("SERVICE异常", throwable);
             DingdingUtil.sendMsg(DateUtil.now() + "-SERVICE异常");
-            return ResultGenerator.genErrorResult("B001", "系统错误");
+            return ResultGenerator.error();
         } finally {
             long diffTimeMillis = System.currentTimeMillis() - currentTimeMillis;
             // 出参日志

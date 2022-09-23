@@ -26,11 +26,11 @@ public class CashServiceImpl implements CashService {
     public Result save(BigDecimal tradeAmount, BigDecimal actualAmount) {
 
         if (tradeAmount.compareTo(BigDecimal.ZERO) <= 0 || actualAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            return ResultGenerator.genFailResult("到账金额或交易金额不得小于0");
+            return ResultGenerator.fail("到账金额或交易金额不得小于0");
         }
 
         if (tradeAmount.compareTo(actualAmount) < 0) {
-            return ResultGenerator.genFailResult("到账金额不得小于交易金额");
+            return ResultGenerator.fail("到账金额不得小于交易金额");
         }
 
         Cash cash = new Cash();
@@ -39,13 +39,13 @@ public class CashServiceImpl implements CashService {
         cash.setFee(NumberUtil.sub(tradeAmount, actualAmount));
         cashMapper.insert(cash);
 
-        return ResultGenerator.genSuccessResult("保存成功");
+        return ResultGenerator.success("保存成功");
     }
 
     @Override
     public Result listCashRecord() {
         List<Cash> cashList = cashMapper.selectList(null);
-        return ResultGenerator.genSuccessResult(cashList);
+        return ResultGenerator.success(cashList);
     }
 
 }

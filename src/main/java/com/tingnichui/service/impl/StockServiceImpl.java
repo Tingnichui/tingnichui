@@ -72,7 +72,7 @@ public class StockServiceImpl implements StockService {
 
         // 16点之前或者当天不是工作日不可以保存更新均线值
         if (DateUtil.hour(new Date(), true) < 16 || !stockUtil.isStockTradeDate(new Date())) {
-            return ResultGenerator.genSuccessResult("雪球-16点之后并且时工作日才允许保存日线记录！");
+            return ResultGenerator.success("雪球-16点之后并且时工作日才允许保存日线记录！");
         }
 
         try {
@@ -115,9 +115,9 @@ public class StockServiceImpl implements StockService {
             }
         } catch (Exception e) {
             log.error("updateStock4xueqiu异常",e);
-            return ResultGenerator.genFailResult("未成功爬取数据！");
+            return ResultGenerator.fail("未成功爬取数据！");
         }
-        return ResultGenerator.genSuccessResult("股票每日成交量、MA5、MA10、MA20更新完成！");
+        return ResultGenerator.success("股票每日成交量、MA5、MA10、MA20更新完成！");
     }
 
 
@@ -194,9 +194,9 @@ public class StockServiceImpl implements StockService {
             Thread.sleep(3000);
         } catch (Exception e) {
             log.warn("爬取日线失败", e);
-            return ResultGenerator.genFailResult(name + "未成功保存日记录");
+            return ResultGenerator.fail(name + "未成功保存日记录");
         }
-        return ResultGenerator.genSuccessResult("更新[ " + name + " ]近日成交数据完成！");
+        return ResultGenerator.success("更新[ " + name + " ]近日成交数据完成！");
     }
 
     private Date checkDailyRecord() {
@@ -222,7 +222,7 @@ public class StockServiceImpl implements StockService {
 
         // 16点之前或者当天不是工作日不可以保存日线记录
         if (DateUtil.hour(new Date(), true) < 16 || !stockUtil.isStockTradeDate(new Date())) {
-            return ResultGenerator.genSuccessResult("雪球-16点之后并且时工作日才允许保存日线记录！");
+            return ResultGenerator.success("雪球-16点之后并且时工作日才允许保存日线记录！");
         }
 
         HashMap<String, StockInfo> trackStockMap = new HashMap<>(16);
@@ -236,7 +236,7 @@ public class StockServiceImpl implements StockService {
         // 15点后读取当日交易数据
         this.toSaveDailyRecord(stockMap);
 
-        return ResultGenerator.genSuccessResult("雪球-更新股票每日成交数据完成！");
+        return ResultGenerator.success("雪球-更新股票每日成交数据完成！");
     }
 
     @RedisLock(key = CacheConsts.SAVE_DAILY_RECORD_FROM_EASTMONEY_LOCK)
@@ -245,7 +245,7 @@ public class StockServiceImpl implements StockService {
 
         // 16点之前或者当天不是工作日不可以保存日线记录
         if (DateUtil.hour(new Date(), true) < 16 || !stockUtil.isStockTradeDate(new Date())) {
-            return ResultGenerator.genSuccessResult("东方财富-16点之后并且时工作日才允许保存日线记录！");
+            return ResultGenerator.success("东方财富-16点之后并且时工作日才允许保存日线记录！");
         }
 
         // 获取未退市的股票和指数
@@ -260,7 +260,7 @@ public class StockServiceImpl implements StockService {
 
         this.crawDailyIndexFromSina(stockInfoList.stream().filter(s -> s.getStockType() == 1).collect(Collectors.toList()));
         this.crawDailyIndexFromEastMoney(stockInfoList);
-        return ResultGenerator.genSuccessResult("东方财富-更新股票每日成交数据完成！");
+        return ResultGenerator.success("东方财富-更新股票每日成交数据完成！");
 
     }
 
@@ -270,7 +270,7 @@ public class StockServiceImpl implements StockService {
         // 16点之前或者当天不是工作日不可以保存更新均线值
         Date date = new Date();
         if (DateUtil.hour(date, true) < 16 || !stockUtil.isStockTradeDate(date)) {
-            return ResultGenerator.genSuccessResult("东方财富-16点之前或者当天不是工作日不可以更新均线值！");
+            return ResultGenerator.success("东方财富-16点之前或者当天不是工作日不可以更新均线值！");
         }
 
         // 获取今日所有的日线信息
@@ -326,7 +326,7 @@ public class StockServiceImpl implements StockService {
 
         }
 
-        return ResultGenerator.genSuccessResult("更新股票ma5 ma10 ma20 ma100 ma500！");
+        return ResultGenerator.success("更新股票ma5 ma10 ma20 ma100 ma500！");
 
     }
 
@@ -430,7 +430,7 @@ public class StockServiceImpl implements StockService {
             sb.setLength(sb.length() - 1);
             DingdingUtil.sendMsg(sb.toString());
         }
-        return ResultGenerator.genSuccessResult("新浪-股价实时检测中！");
+        return ResultGenerator.success("新浪-股价实时检测中！");
     }
 
     private boolean getStrategyResult(StockTradeRecord stockTradeRecord, DailyIndex dailyIndex, StockTradeStrategy buyStrategy) {
@@ -593,14 +593,14 @@ public class StockServiceImpl implements StockService {
             stockInfoMapper.updateById(stockInfo);
         }
 
-        return ResultGenerator.genSuccessResult("更新股票信息完成！");
+        return ResultGenerator.success("更新股票信息完成！");
     }
 
     @Override
     public Result listStockTrade() {
         List<StockTradeRecord> stockTradeRecords = stockTradeRecordMapper.selectList(null);
 
-        return ResultGenerator.genSuccessResult(stockTradeRecords);
+        return ResultGenerator.success(stockTradeRecords);
     }
 
     private void crawDailyIndexFromSina(List<StockInfo> list) {

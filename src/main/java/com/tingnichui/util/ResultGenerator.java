@@ -2,9 +2,9 @@ package com.tingnichui.util;
 
 
 
-import com.tingnichui.common.ServiceResultEnum;
+import com.tingnichui.common.ResultCode;
 import com.tingnichui.pojo.vo.Result;
-import org.springframework.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -14,53 +14,59 @@ import org.springframework.util.StringUtils;
 public class ResultGenerator {
     private static final String DEFAULT_SUCCESS_MESSAGE = "SUCCESS";
     private static final String DEFAULT_FAIL_MESSAGE = "FAIL";
-    private static final String RESULT_CODE_SUCCESS = "00000";
-    private static final String RESULT_CODE_SERVER_ERROR = "B0001";
+    private static final String RESULT_CODE_SUCCESS = "0000";
+    private static final String RESULT_CODE_FAIL = "9999";
+
 
     private ResultGenerator() {
     }
 
-    public static Result genSuccessResult() {
-        Result result = new Result();
-        result.setCode(RESULT_CODE_SUCCESS);
-        result.setMessage(DEFAULT_SUCCESS_MESSAGE);
+    public static <T> Result<T> success() {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.OK.getCode());
+        result.setMsg(ResultCode.OK.getMessage());
+        result.setSubCode(RESULT_CODE_SUCCESS);
+        result.setSubMsg(DEFAULT_SUCCESS_MESSAGE);
         return result;
     }
 
-    public static Result genSuccessResult(String message) {
-        Result result = new Result();
-        result.setCode(RESULT_CODE_SUCCESS);
-        result.setMessage(message);
+    public static <T> Result<T> success(String message) {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.OK.getCode());
+        result.setMsg(ResultCode.OK.getMessage());
+        result.setSubCode(RESULT_CODE_SUCCESS);
+        result.setSubMsg(message);
         return result;
     }
 
-    public static Result genSuccessResult(Object data) {
-        Result result = new Result();
-        result.setCode(RESULT_CODE_SUCCESS);
-        result.setMessage(DEFAULT_SUCCESS_MESSAGE);
+    public static <T> Result<T> success(T data) {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.OK.getCode());
+        result.setMsg(ResultCode.OK.getMessage());
+        result.setSubCode(RESULT_CODE_SUCCESS);
+        result.setSubMsg(DEFAULT_SUCCESS_MESSAGE);
         result.setData(data);
         return result;
     }
 
-    public static Result genFailResult(String message) {
-        Result result = new Result();
-        result.setCode(RESULT_CODE_SERVER_ERROR);
-        if (StringUtils.isEmpty(message)) {
-            result.setMessage(DEFAULT_FAIL_MESSAGE);
+    public static <T> Result<T> fail(String message) {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.OK.getCode());
+        result.setMsg(ResultCode.OK.getMessage());
+        result.setSubCode(RESULT_CODE_FAIL);
+        if (StringUtils.isBlank(message)) {
+            result.setSubMsg(DEFAULT_FAIL_MESSAGE);
         } else {
-            result.setMessage(message);
+            result.setSubMsg(message);
         }
         return result;
     }
 
-    public static Result genErrorResult(String code, String message) {
-        Result result = new Result();
-        result.setCode(code);
-        result.setMessage(message);
+    public static <T> Result<T> error() {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.SERVICE_ERROR.getCode());
+        result.setMsg(ResultCode.SERVICE_ERROR.getMessage());
         return result;
     }
 
-    public static Result genDmlResult(boolean result) {
-        return result ? genSuccessResult() : genFailResult(ServiceResultEnum.DB_ERROR.getResult());
-    }
 }

@@ -16,7 +16,7 @@ import javax.annotation.Resource;
  */
 @Api(tags = "股票自动交易")
 @RestController
-@RequestMapping("/api/stock")
+@RequestMapping("/stock")
 public class StockController {
 
     @Resource
@@ -25,7 +25,7 @@ public class StockController {
     @ApiOperation("测试服务是否正常运行")
     @GetMapping("/health")
     public Result health() {
-        return ResultGenerator.genSuccessResult("HEALTH");
+        return ResultGenerator.success("HEALTH");
     }
 
     @ApiOperation("从东方财富保存股票日线记录")

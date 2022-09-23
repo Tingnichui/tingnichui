@@ -4,11 +4,7 @@ import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -20,7 +16,7 @@ import java.math.BigDecimal;
  */
 @Api(tags = "POS机交易")
 @RestController
-@RequestMapping("/api/cash")
+@RequestMapping("/cash")
 public class CashController {
 
     @Resource
@@ -29,7 +25,7 @@ public class CashController {
     @ApiOperation("测试服务是否正常运行")
     @GetMapping("health")
     public Result health() {
-        return ResultGenerator.genSuccessResult("HEALTH");
+        return ResultGenerator.success("HEALTH");
     }
 
     @ApiOperation("保存交易")
