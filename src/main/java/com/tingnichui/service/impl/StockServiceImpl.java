@@ -11,10 +11,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tingnichui.annotation.RedisLock;
 import com.tingnichui.common.CacheConsts;
-import com.tingnichui.dao.DailyIndexMapper;
-import com.tingnichui.dao.StockInfoMapper;
-import com.tingnichui.dao.StockTradeRecordMapper;
-import com.tingnichui.dao.StockTradeStrategyMapper;
+import com.tingnichui.mapper.DailyIndexMapper;
+import com.tingnichui.mapper.StockInfoMapper;
+import com.tingnichui.mapper.StockTradeRecordMapper;
+import com.tingnichui.mapper.StockTradeStrategyMapper;
 import com.tingnichui.pojo.bo.EmStock;
 import com.tingnichui.pojo.po.DailyIndex;
 import com.tingnichui.pojo.po.StockInfo;
@@ -333,7 +333,7 @@ public class StockServiceImpl implements StockService {
     @Override
     public Result monitorStock() {
         // 新浪
-        List<StockInfo> monitorStockList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getIsMonitor, Boolean.TRUE));
+        List<StockInfo> monitorStockList = stockInfoMapper.selectList(new LambdaQueryWrapper<StockInfo>().eq(StockInfo::getMonitor, Boolean.TRUE));
         List<String> codeList = monitorStockList.stream().map(v -> StockUtil.getFullCode(v.getStockCode())).collect(Collectors.toList());
         List<DailyIndex> nowDailyIndexList = this.getDailyIndex(codeList);
 
@@ -367,7 +367,7 @@ public class StockServiceImpl implements StockService {
                     stockTradeRecord.setTradePrice(dailyIndex.getClosePrice());
                     stockTradeRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
                     stockTradeRecord.setTradeAmount(buyStrategy.getTragetAmount());
-                    stockTradeRecord.setIsDone(true);
+                    stockTradeRecord.setDone(true);
                     int insert = stockTradeRecordMapper.insert(stockTradeRecord);
                     if (insert > 0) {
                         String body = String.format("%s|买入%s:当前价格:%.02f, 涨幅%.02f%%",
@@ -382,12 +382,12 @@ public class StockServiceImpl implements StockService {
             }
 
             // 卖点|先判断该策略下有没有建仓，已经建仓才能进行卖点判断
-            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getIsDone, true));
+            List<StockTradeRecord> stockTradeRecordList = stockTradeRecordMapper.selectList(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "buy").eq(StockTradeRecord::getDone, true));
             if (!stockTradeRecordList.isEmpty()) {
 
                 // 统计建仓数量
                 int buyCount = stockTradeRecordList.stream().mapToInt(StockTradeRecord::getTradeAmount).sum();
-                int sellCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "sell").eq(StockTradeRecord::getIsDone, true));
+                int sellCount = stockTradeRecordMapper.selectCount(new LambdaQueryWrapper<StockTradeRecord>().eq(StockTradeRecord::getStockCode, stockCode).eq(StockTradeRecord::getTradeType, "sell").eq(StockTradeRecord::getDone, true));
                 int actualCount = buyCount - sellCount;
 
                 // 获取卖点策略
@@ -410,7 +410,7 @@ public class StockServiceImpl implements StockService {
                             sellRecord.setTradePrice(dailyIndex.getClosePrice());
                             sellRecord.setTradeDate(new java.sql.Date(System.currentTimeMillis()));
                             sellRecord.setTradeAmount(strategSellAmount);
-                            sellRecord.setIsDone(false);
+                            sellRecord.setDone(false);
                             int insert = stockTradeRecordMapper.insert(sellRecord);
                             if (insert > 0) {
                                 actualCount -= strategSellAmount;
@@ -440,7 +440,7 @@ public class StockServiceImpl implements StockService {
             return Boolean.FALSE;
         }
 
-        if (!buyStrategy.getIsWork()) {
+        if (!buyStrategy.getWork()) {
             return Boolean.FALSE;
         }
 

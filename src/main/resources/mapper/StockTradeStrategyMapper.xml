@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tingnichui.mapper.StockTradeStrategyMapper">
+
+    <resultMap id="BaseResultMap" type="com.tingnichui.pojo.po.StockTradeStrategy">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="stockCode" column="stock_code" jdbcType="CHAR"/>
+            <result property="strategyType" column="strategy_type" jdbcType="VARCHAR"/>
+            <result property="work" column="is_work" jdbcType="TINYINT"/>
+            <result property="monitorType" column="monitor_type" jdbcType="VARCHAR"/>
+            <result property="compareMethod" column="compare_method" jdbcType="CHAR"/>
+            <result property="targetType" column="target_type" jdbcType="VARCHAR"/>
+            <result property="targetCalculationType" column="target_calculation_type" jdbcType="VARCHAR"/>
+            <result property="targetValue" column="target_value" jdbcType="DECIMAL"/>
+            <result property="tragetAmount" column="traget_amount" jdbcType="INTEGER"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,title,stock_code,
+        strategy_type,is_work,monitor_type,
+        compare_method,target_type,target_calculation_type,
+        target_value,traget_amount,update_time,
+        create_time
+    </sql>
+</mapper>

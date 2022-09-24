@@ -1,76 +1,82 @@
 package com.tingnichui.pojo.po;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
+import lombok.Data;
 
 /**
- * @author Geng Hui
- * @version 1.0
- * @date 2022/8/20 18:43
+ * 
+ * @TableName t_stock_trade_record
  */
+@TableName(value ="t_stock_trade_record")
 @Data
-@TableName("t_stock_trade_record")
-public class StockTradeRecord {
-
+public class StockTradeRecord implements Serializable {
     /**
-     * id
+     * 
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
      * 股票代码
      */
+    @TableField(value = "stock_code")
     private String stockCode;
 
-
     /**
-     * 交易策略id
+     * 政策表id
      */
+    @TableField(value = "stock_trade_strategy_id")
     private Long stockTradeStrategyId;
 
     /**
-     * 交易类型
+     * 交易类型 buy买入 sell卖出
+
      */
+    @TableField(value = "trade_type")
     private String tradeType;
 
     /**
-     * 买入价
+     * 交易价格
      */
+    @TableField(value = "trade_price")
     private BigDecimal tradePrice;
 
     /**
-     * 买入日期
+     * 交易日期
      */
-    @JsonFormat(pattern = "yyyy-MM-dd")
-    private java.sql.Date tradeDate;
+    @TableField(value = "trade_date")
+    private Date tradeDate;
 
     /**
      * 交易数量，单位手
      */
+    @TableField(value = "trade_amount")
     private Integer tradeAmount;
 
     /**
-     * 交易数量，单位手
+     * 是否交易成功 0未交易1已交易
      */
-    private Boolean isDone;
+    @TableField(value = "is_done")
+    private Boolean done;
 
     /**
-     * update_time
+     * 
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField(value = "update_time")
     private Date updateTime;
 
     /**
-     * create_time
+     * 
      */
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @TableField(value = "create_time")
     private Date createTime;
 
+    @TableField(exist = false)
+    private static final long serialVersionUID = 1L;
 }

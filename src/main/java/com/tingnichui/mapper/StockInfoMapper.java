@@ -1,8 +1,7 @@
-package com.tingnichui.dao;
+package com.tingnichui.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tingnichui.pojo.po.StockInfo;
-import com.tingnichui.pojo.po.StockTradeRecord;
 import org.apache.ibatis.annotations.Mapper;
 
 /**
@@ -10,6 +9,6 @@ import org.apache.ibatis.annotations.Mapper;
  * @date  2022/8/25 9:25
  */
 @Mapper
-public interface StockTradeRecordMapper extends BaseMapper<StockTradeRecord> {
+public interface StockInfoMapper extends BaseMapper<StockInfo> {
 
 }

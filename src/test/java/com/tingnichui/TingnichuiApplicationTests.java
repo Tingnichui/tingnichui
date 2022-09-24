@@ -1,8 +1,8 @@
 package com.tingnichui;
 
-import com.tingnichui.dao.DailyIndexMapper;
-import com.tingnichui.dao.StockInfoMapper;
-import com.tingnichui.dao.StockTradeStrategyMapper;
+import com.tingnichui.mapper.DailyIndexMapper;
+import com.tingnichui.mapper.StockInfoMapper;
+import com.tingnichui.mapper.StockTradeStrategyMapper;
 import com.tingnichui.pojo.po.StockTradeStrategy;
 import com.tingnichui.service.StockService;
 import com.tingnichui.service.impl.StockServiceImpl;
@@ -63,7 +63,7 @@ class TingnichuiApplicationTests {
         StockTradeStrategy buyStrategy = new StockTradeStrategy();
         buyStrategy.setStockCode("601288");
         buyStrategy.setStrategyType("buy");
-        buyStrategy.setIsWork(true);
+        buyStrategy.setWork(true);
         buyStrategy.setMonitorType("closePrice");
         buyStrategy.setCompareMethod("lt");
         buyStrategy.setTargetType("ma5");

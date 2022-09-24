@@ -1,4 +1,4 @@
-package com.tingnichui.dao;
+package com.tingnichui.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.tingnichui.pojo.po.DailyIndex;

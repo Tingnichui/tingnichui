@@ -31,7 +31,8 @@ public class CashController {
     @ApiOperation("保存交易")
     @PostMapping("save/{tradeAmount}/{actualAmount}")
     public Result save(@PathVariable BigDecimal tradeAmount, @PathVariable BigDecimal actualAmount) {
-        return cashService.save(tradeAmount, actualAmount);
+        cashService.save(tradeAmount,actualAmount);
+        return ResultGenerator.success();
     }
 
     @ApiOperation("分页查询交易记录")

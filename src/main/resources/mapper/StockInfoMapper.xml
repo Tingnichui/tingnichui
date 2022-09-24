@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tingnichui.mapper.StockInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.tingnichui.pojo.po.StockInfo">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="stockName" column="stock_name" jdbcType="VARCHAR"/>
+            <result property="stockExchange" column="stock_exchange" jdbcType="CHAR"/>
+            <result property="stockCode" column="stock_code" jdbcType="VARCHAR"/>
+            <result property="stockType" column="stock_type" jdbcType="INTEGER"/>
+            <result property="stockState" column="stock_state" jdbcType="INTEGER"/>
+            <result property="monitor" column="is_monitor" jdbcType="TINYINT"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,stock_name,stock_exchange,
+        stock_code,stock_type,stock_state,
+        is_monitor,create_time,update_time
+    </sql>
+</mapper>

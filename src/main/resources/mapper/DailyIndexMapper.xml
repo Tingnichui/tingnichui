@@ -1,9 +1,40 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tingnichui.mapper.DailyIndexMapper">
 
-<mapper namespace="com.tingnichui.dao.DailyIndexMapper">
+    <resultMap id="BaseResultMap" type="com.tingnichui.pojo.po.DailyIndex">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="stockCode" column="stock_code" jdbcType="VARCHAR"/>
+            <result property="stockDate" column="stock_date" jdbcType="DATE"/>
+            <result property="openPrice" column="open_price" jdbcType="DECIMAL"/>
+            <result property="highestPrice" column="highest_price" jdbcType="DECIMAL"/>
+            <result property="lowestPrice" column="lowest_price" jdbcType="DECIMAL"/>
+            <result property="closePrice" column="close_price" jdbcType="DECIMAL"/>
+            <result property="preClosePrice" column="pre_close_price" jdbcType="DECIMAL"/>
+            <result property="tradeVolume" column="trade_volume" jdbcType="BIGINT"/>
+            <result property="tradeAmount" column="trade_amount" jdbcType="DECIMAL"/>
+            <result property="rurnoverRate" column="rurnover_rate" jdbcType="DECIMAL"/>
+            <result property="increase" column="increase" jdbcType="DECIMAL"/>
+            <result property="ma5" column="ma5" jdbcType="DECIMAL"/>
+            <result property="ma10" column="ma10" jdbcType="DECIMAL"/>
+            <result property="ma20" column="ma20" jdbcType="DECIMAL"/>
+            <result property="ma100" column="ma100" jdbcType="DECIMAL"/>
+            <result property="ma500" column="ma500" jdbcType="DECIMAL"/>
+            <result property="createTime" column="create_time" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="update_time" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,stock_code,stock_date,
+        open_price,highest_price,lowest_price,
+        close_price,pre_close_price,trade_volume,
+        trade_amount,rurnover_rate,increase,
+        ma5,ma10,ma20,
+        ma100,ma500,create_time,
+        update_time
+    </sql>
 
     <select id="sumCloserPrice" resultType="decimal">
         SELECT IFNULL(sum(close_price), 0)
@@ -12,6 +43,4 @@
               WHERE stock_code = #{stockCode}
               ORDER BY stock_date DESC LIMIT #{limit}) as temp
     </select>
-
-
 </mapper>

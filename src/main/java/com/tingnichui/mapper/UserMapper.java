@@ -1,4 +1,4 @@
-package com.tingnichui.dao;
+package com.tingnichui.mapper;
 
 import com.tingnichui.pojo.po.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;

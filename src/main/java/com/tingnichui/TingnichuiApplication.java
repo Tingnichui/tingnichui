@@ -10,7 +10,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
 @EnableScheduling
-@MapperScan("com.tingnichui.dao")
+@MapperScan("com.tingnichui.mapper")
 @SpringBootApplication
 public class TingnichuiApplication {
 

@@ -1,7 +1,8 @@
 package com.tingnichui.service.impl;
 
 import cn.hutool.core.util.NumberUtil;
-import com.tingnichui.dao.CashMapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tingnichui.mapper.CashMapper;
 import com.tingnichui.pojo.po.Cash;
 import com.tingnichui.pojo.vo.Result;
 import com.tingnichui.service.CashService;
@@ -13,11 +14,13 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * @author  Geng Hui
- * @date  2022/8/25 9:32
- */
+* @author Tingnichui
+* @description 针对表【t_cash】的数据库操作Service实现
+* @createDate 2022-09-24 14:41:22
+*/
 @Service
-public class CashServiceImpl implements CashService {
+public class CashServiceImpl extends ServiceImpl<CashMapper, Cash>
+    implements CashService{
 
     @Resource
     private CashMapper cashMapper;
@@ -49,3 +52,7 @@ public class CashServiceImpl implements CashService {
     }
 
 }
+
+
+
+
