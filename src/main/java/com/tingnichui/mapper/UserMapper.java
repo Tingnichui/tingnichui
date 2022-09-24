@@ -2,6 +2,7 @@ package com.tingnichui.mapper;
 
 import com.tingnichui.pojo.po.User;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author Tingnichui
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2022-09-23 21:22:52
 * @Entity com.tingnichui.pojo.po.User
 */
+@Mapper
 public interface UserMapper extends BaseMapper<User> {
 
 }
