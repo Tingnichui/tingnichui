@@ -17,6 +17,8 @@ public class ResultGenerator {
     private static final String RESULT_CODE_SUCCESS = "0000";
     private static final String RESULT_CODE_FAIL = "9999";
 
+    private static final String RESULT_CODE_RELOGIN = "A0230";
+
 
     private ResultGenerator() {
     }
@@ -56,6 +58,19 @@ public class ResultGenerator {
         result.setSubCode(RESULT_CODE_FAIL);
         if (StringUtils.isBlank(message)) {
             result.setSubMsg(DEFAULT_FAIL_MESSAGE);
+        } else {
+            result.setSubMsg(message);
+        }
+        return result;
+    }
+
+    public static <T> Result<T> reLogin(String message) {
+        Result<T> result = new Result<T>();
+        result.setCode(ResultCode.OK.getCode());
+        result.setMsg(ResultCode.OK.getMessage());
+        result.setSubCode(RESULT_CODE_RELOGIN);
+        if (StringUtils.isBlank(message)) {
+            result.setSubMsg(RESULT_CODE_RELOGIN);
         } else {
             result.setSubMsg(message);
         }

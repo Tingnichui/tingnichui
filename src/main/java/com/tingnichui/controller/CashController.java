@@ -5,6 +5,7 @@ import com.tingnichui.service.CashService;
 import com.tingnichui.util.ResultGenerator;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -34,7 +35,7 @@ public class CashController {
         cashService.save(tradeAmount,actualAmount);
         return ResultGenerator.success();
     }
-
+    
     @ApiOperation("分页查询交易记录")
     @GetMapping("listCashRecord")
     public Result listCashRecord() {
