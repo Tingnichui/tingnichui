@@ -1,7 +1,5 @@
 server:
   port: 1128
-  servlet:
-#    context-path: /api
 spring:
   profiles:
     active: pro
