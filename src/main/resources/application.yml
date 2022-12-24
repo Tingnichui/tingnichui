@@ -50,6 +50,7 @@ secure:
       - /user/login/**
       - /user/register
       - /user/logout
+      - /cash/health
 
 jwt:
   tokenHeader: Authorization #JWT存储的请求头
