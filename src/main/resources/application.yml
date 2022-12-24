@@ -6,7 +6,7 @@ spring:
   profiles:
     active: pro
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/tingnichui?useUnicode=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&autoReconnect=true&useSSL=false&allowMultiQueries=true&useAffectedRows=true
+    url: jdbc:mysql://172.17.0.4:3306/tingnichui?useUnicode=true&serverTimezone=Asia/Shanghai&characterEncoding=utf8&autoReconnect=true&useSSL=false&allowMultiQueries=true&useAffectedRows=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: hikariCP

@@ -1,4 +1,4 @@
 spring:
   datasource:
-    username: chunhui
+    username: root
     password: chunhui
